@@ -14,6 +14,12 @@
   "topspeed.header.top": "{Green}--- All Time Top Records ---{Default}",
   "topspeed.header.pr": "{Green}--- Your Personal Records ---{Default}",
   "topspeed.list.entry": "{0}. {1}: {Green}{2}{Default} ({3}s)",
+
+  "help.cmd.topspeed": "Records of online players",
+  "help.cmd.topspeedmap": "Top records on this map",
+  "help.cmd.topspeedmaplist": "List of recorded maps",
+  "help.cmd.topspeedtop": "Global server records",
+  "help.cmd.topspeedpr": "Your personal records",
   
   "speedometer.round_top_players": "{Green}--- Fastest of the Round ---",
   
@@ -68,6 +74,7 @@
   "chat.admin.record_deleted": "{DarkRed}Record deleted: {0} ({1})",
 
   "general.cooldown": "Please wait {0} seconds before using this command again.",
+  "general.no_permission": "{Red}You do not have permission to use this command!",
 
   "help.message.topspeed": "{Green}Type {Olive}!topspeedhelp {Green}to see record commands.",
   "help.message.speedometer": "{LightBlue}Type {Olive}!speedmeteredit {LightBlue}to customize your speedometer settings.",

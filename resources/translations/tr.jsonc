@@ -14,6 +14,12 @@
   "topspeed.header.top": "{Green}--- Tum Zamanlarin En Iyileri ---{Default}",
   "topspeed.header.pr": "{Green}--- Senin Rekorlarin ---{Default}",
   "topspeed.list.entry": "{0}. {1}: {Green}{2}{Default} ({3}s)",
+
+  "help.cmd.topspeed": "Online oyuncu rekorları",
+  "help.cmd.topspeedmap": "Bu haritadaki rekorlar",
+  "help.cmd.topspeedmaplist": "Kayıtlı haritalar listesi",
+  "help.cmd.topspeedtop": "Sunucu geneli rekorlar",
+  "help.cmd.topspeedpr": "Kişisel rekorların",
   
   "speedometer.round_top_players": "{Green}--- Round En Hızlıları ---",
 
@@ -68,6 +74,7 @@
   "chat.admin.record_deleted": "{DarkRed}Kayit silindi: {0} ({1})",
 
   "general.cooldown": "Lutfen tekrar kullanmak icin {0} saniye bekleyin.",
+  "general.no_permission": "{Red}Bu komutu kullanmak için yetkiniz yok!",
   
   "help.message.topspeed": "{Green}Rekor komutlarini gormek icin {Olive}!topspeedhelp {Green}yazabilirsiniz.",
   "help.message.speedometer": "{LightBlue}Hiz gostergesi ve renk ayarlari icin {Olive}!speedmeteredit {LightBlue}yazabilirsiniz.",

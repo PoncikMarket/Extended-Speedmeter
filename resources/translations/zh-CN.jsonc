@@ -15,6 +15,12 @@
   "topspeed.header.pr": "{Green}--- 你的个人记录 ---{Default}",
   "topspeed.list.entry": "{0}. {1}：{Green}{2}{Default}（{3}s）",
 
+  "help.cmd.topspeed": "在线玩家记录",
+  "help.cmd.topspeedmap": "当前地图最佳记录",
+  "help.cmd.topspeedmaplist": "已记录地图列表",
+  "help.cmd.topspeedtop": "全服记录",
+  "help.cmd.topspeedpr": "您的个人记录",
+
   "speedometer.round_top_players": "{Green}--- 本回合最快玩家 ---",
 
   "menu.title.main": "速度表设置",
@@ -68,6 +74,7 @@
   "chat.admin.record_deleted": "{DarkRed}记录已删除：{0}（{1}）",
 
   "general.cooldown": "请等待 {0} 秒后再使用此命令。",
+  "general.no_permission": "{Red}您没有权限使用此指令！",
 
   "help.message.topspeed": "{Green}输入 {Olive}!topspeedhelp {Green} 查看记录相关命令。",
   "help.message.speedometer": "{LightBlue}输入 {Olive}!speedmeteredit {LightBlue} 自定义你的速度表设置。",

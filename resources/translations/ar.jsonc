@@ -15,6 +15,12 @@
   "topspeed.header.pr": "{Green}--- أرقامك القياسية الشخصية ---{Default}",
   "topspeed.list.entry": "{0}. {1}: {Green}{2}{Default} ({3}ث)",
 
+  "help.cmd.topspeed": "سجلات اللاعبين المتصلين",
+  "help.cmd.topspeedmap": "أفضل الأرقام في هذه الخريطة",
+  "help.cmd.topspeedmaplist": "قائمة الخرائط المسجلة",
+  "help.cmd.topspeedtop": "الأرقام القياسية العالمية للخادم",
+  "help.cmd.topspeedpr": "أرقامك القياسية الشخصية",
+
   "speedometer.round_top_players": "{Green}--- أسرع لاعبي الجولة ---",
 
   "menu.title.main": "إعدادات عداد السرعة",
@@ -68,6 +74,7 @@
   "chat.admin.record_deleted": "{DarkRed}تم حذف الرقم القياسي: {0} ({1})",
 
   "general.cooldown": "يرجى الانتظار {0} ثوانٍ قبل استخدام هذا الأمر مرة أخرى.",
+  "general.no_permission": "{Red}ليس لديك إذن لاستخدام هذا الأمر!",
 
   "help.message.topspeed": "{Green}اكتب {Olive}!topspeedhelp {Green}لعرض أوامر الأرقام القياسية.",
   "help.message.speedometer": "{LightBlue}اكتب {Olive}!speedmeteredit {LightBlue}لتخصيص إعدادات عداد السرعة.",

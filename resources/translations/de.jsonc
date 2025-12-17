@@ -15,6 +15,12 @@
   "topspeed.header.pr": "{Green}--- Deine persönlichen Rekorde ---{Default}",
   "topspeed.list.entry": "{0}. {1}: {Green}{2}{Default} ({3}s)",
 
+  "help.cmd.topspeed": "Rekorde der Online-Spieler",
+  "help.cmd.topspeedmap": "Top-Rekorde auf dieser Map",
+  "help.cmd.topspeedmaplist": "Liste der aufgezeichneten Maps",
+  "help.cmd.topspeedtop": "Globale Server-Rekorde",
+  "help.cmd.topspeedpr": "Deine persönlichen Rekorde",
+
   "speedometer.round_top_players": "{Green}--- Schnellste Spieler der Runde ---",
 
   "menu.title.main": "Speedometer-Einstellungen",
@@ -68,6 +74,7 @@
   "chat.admin.record_deleted": "{DarkRed}Rekord gelöscht: {0} ({1})",
 
   "general.cooldown": "Bitte warte {0} Sekunden, bevor du diesen Befehl erneut verwendest.",
+  "general.no_permission": "{Red}Du hast keine Berechtigung, diesen Befehl zu verwenden!",
 
   "help.message.topspeed": "{Green}Gib {Olive}!topspeedhelp {Green}ein, um die Rekord-Befehle anzuzeigen.",
   "help.message.speedometer": "{LightBlue}Gib {Olive}!speedmeteredit {LightBlue}ein, um deine Speedometer-Einstellungen anzupassen.",

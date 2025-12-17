@@ -118,7 +118,10 @@ public partial class Speedometer
         }
 
         string header = localizer["topspeed.header.map"] ?? "--- Top Records on {0} ---";
-        header = header.Replace("{0}", "Online Players");
+        string onlinePlayersText = localizer["menu.topspeed.online"] ?? "Online Players";
+        if(onlinePlayersText.Contains("(")) onlinePlayersText = onlinePlayersText.Split('(')[0].Trim();
+        
+        header = header.Replace("{0}", onlinePlayersText);
         _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(header)}"));
         
         int rank = 1;
@@ -185,6 +188,7 @@ public partial class Speedometer
             int rank = 1;
             foreach (var r in records) {
                 string speedStr = Globals.FormatSpeed(r.velocity);
+                string rawLine = localizer["topspeed.list.entry"] ?? "{0}. {1}: {2} ({3}s)";
                 string entry = $"{rank}. {r.player_name} ({r.map_name}): {{Green}}{speedStr}{{Default}}";
                 _chatQueue.Enqueue((player, Globals.ProcessColors(entry)));
                 rank++;
@@ -272,12 +276,20 @@ public partial class Speedometer
         if (context.Sender is not IPlayer player) return;
         if(!CheckCommandCooldown(player)) return;
 
-        string p = Globals.ProcessColors(Config.Prefix);
-        player.SendChat($"{p} {Globals.ProcessColors("{Green}!topspeed {Default}- Online oyuncu rekorlari")}");
-        player.SendChat($"{p} {Globals.ProcessColors("{Green}!topspeedmap {Default}- Bu haritadaki rekorlar")}");
-        player.SendChat($"{p} {Globals.ProcessColors("{Green}!topspeedmaplist {Default}- Kayitli haritalar listesi")}");
-        player.SendChat($"{p} {Globals.ProcessColors("{Green}!topspeedtop {Default}- Sunucu geneli rekorlar")}");
-        player.SendChat($"{p} {Globals.ProcessColors("{Green}!topspeedpr {Default}- Kendi rekorlarin")}");
+        var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
+        string p = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
+        
+        string hTopSpeed = localizer["help.cmd.topspeed"] ?? "Online player records";
+        string hMap = localizer["help.cmd.topspeedmap"] ?? "Records on this map";
+        string hMapList = localizer["help.cmd.topspeedmaplist"] ?? "List of recorded maps";
+        string hGlobal = localizer["help.cmd.topspeedtop"] ?? "Global server records";
+        string hPr = localizer["help.cmd.topspeedpr"] ?? "Your personal records";
+
+        player.SendChat($"{p} {Globals.ProcessColors($"{{Green}}!topspeed {{Default}}- {hTopSpeed}")}");
+        player.SendChat($"{p} {Globals.ProcessColors($"{{Green}}!topspeedmap {{Default}}- {hMap}")}");
+        player.SendChat($"{p} {Globals.ProcessColors($"{{Green}}!topspeedmaplist {{Default}}- {hMapList}")}");
+        player.SendChat($"{p} {Globals.ProcessColors($"{{Green}}!topspeedtop {{Default}}- {hGlobal}")}");
+        player.SendChat($"{p} {Globals.ProcessColors($"{{Green}}!topspeedpr {{Default}}- {hPr}")}");
     }
     
     [Command("topspeedadmin")]
@@ -285,8 +297,9 @@ public partial class Speedometer
     {
         if (context.Sender is not IPlayer player) return;
         if (!Speedometer.Instance.SwiftlyCore.Permission.PlayerHasPermission(player.SteamID, Config.AdminFlag)) {
-            string p = Globals.ProcessColors(Config.Prefix);
-            string msg = Globals.ProcessColors("{Red}Bu komutu kullanmak icin yetkiniz yok!");
+            var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
+            string p = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
+            string msg = Globals.ProcessColors(localizer["general.no_permission"] ?? "{Red}You do not have permission!");
             player.SendChat($"{p} {msg}");
             return;
         }
@@ -298,8 +311,9 @@ public partial class Speedometer
     {
         if (context.Sender is not IPlayer player) return;
         if (!Speedometer.Instance.SwiftlyCore.Permission.PlayerHasPermission(player.SteamID, Config.AdminFlag)) {
-            string p = Globals.ProcessColors(Config.Prefix);
-            string msg = Globals.ProcessColors("{Red}Bu komutu kullanmak icin yetkiniz yok!");
+            var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
+            string p = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
+            string msg = Globals.ProcessColors(localizer["general.no_permission"] ?? "{Red}You do not have permission!");
             player.SendChat($"{p} {msg}");
             return;
         }
