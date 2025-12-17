@@ -2,63 +2,75 @@
   <img src="https://camo.githubusercontent.com/15411371090ab808f4644366f83bf2871aeacd208b2879fbe87f562a20150a3d/68747470733a2f2f70616e2e73616d7979632e6465762f732f56596d4d5845" />
 </p>
 
-A high-performance, feature-rich Speedometer and TopSpeed Record tracking plugin for Counter-Strike 2, built on the Swiftly framework.
+# Extended-Speedmeter
 
-Designed to be Lag-Free, it tracks player speeds, saves records to a database, and sends notifications via Discord Webhooks without impacting server performance.
+A **high-performance**, **feature-rich** Speedometer and TopSpeed Record tracking plugin for **Counter-Strike 2**, built on the **SwiftlyS2 framework**.
 
-Features
-Optimized HUD — Specially optimized speedometer (25ms update rate) ensures fluid visuals without causing "recv queue overflow" or server lag.
+Designed to be **lag-free**, it tracks player speeds, saves records to a database, and sends notifications via **Discord Webhooks** — all **without impacting server performance**.
 
-Detailed Statistics — Real-time Speed (km/h, mph, u/s), Key Overlay (WASD), Jump Stats, and Round End rankings.
 
-Advanced Record System — Tracks Global, Map-Specific, and Personal records instantly.
+## 🚀 Features
 
-Admin Management Panel — Delete records, search players, and edit Speed/Time values directly in-game with instant RAM & DB synchronization.
+### ⚡ Optimized HUD
+- Specially optimized speedometer with a **25ms update rate**
+- Ensures smooth visuals without causing **recv queue overflow** or server lag
 
-Discord Webhook Integration — Sends stylish notifications when a new record is set. Uses a Smart Search system to locate the payload.json configuration automatically.
+### 📊 Detailed Statistics
+- Real-time speed display: **km/h, mph, u/s**
+- **Key Overlay (WASD)**
+- **Jump statistics**
+- **End-of-round rankings**
 
-Multi-Language Support — Fully customizable messages via tr.jsonc and en.jsonc.
+### 🏆 Advanced Record System
+- Tracks **Global**, **Map-Specific**, and **Personal** records instantly
+- High-speed in-memory + database synchronization
 
-Customizable — Players can toggle HUD elements and change colors individually.
+### 🛠 Admin Management Panel
+- Delete records
+- Search players
+- Edit **Speed / Time** values
+- All changes sync instantly with **RAM & Database**
 
-Requirements
-SwiftlyS2
+### 🔔 Discord Webhook Integration
+- Sends stylish notifications when a new record is set
+- Uses a **Smart Search** system to automatically locate `payload.json`
 
-MySQL or MariaDB Database
+### 🌍 Multi-Language Support
+- Fully customizable messages
+- Uses:
+  - `en.jsonc`
+  - `tr.jsonc`
+  - `ar.jsonc`
+  - `de.jsonc`
+  - `es.jsonc`
+  - `fr.jsonc`
+  - `pl.jsonc`
+  - `pt-BR.jsonc`
+  - `ru.jsonc`
+  - `zh-CN.jsonc`
 
-Installation
-Download/Compile the Extended-Speedmeter.dll.
+### 🎨 Customizable HUD
+- Players can:
+  - Toggle HUD elements
+  - Change colors individually
 
-Create a folder named Extended-Speedmeter inside addons/swiftlys2/plugins/.
 
-Upload the DLL and the resources folder (containing translations and payload.json) into that directory.
+## Requirements
+- [SwiftlyS2](https://github.com/swiftly-solution/swiftlys2)
 
-addons/swiftlys2/plugins/Extended-Speedmeter/
-    ├── Extended-Speedmeter.dll
-    └── resources/
-        ├── payload.json
-        └── translations/
-Start the server to generate the configuration file.
+## Configuration
+The plugin creates a JSONC configuration file (`Extended-Speedmeter.json`) in the configs directory.
 
-Configuration
-The plugin automatically creates a configuration file (Extended-Speedmeter.json) in the configs directory.
+- **DatabaseConnection** — The Database ID defined in your Swiftly `core.json`.
+- **Prefix** — Chat prefix for plugin messages.
+- **DefaultHudEnabled** — Whether the HUD is on by default for new players.
+- **SpeedUnit** — Unit of measurement: `0` (u/s), `1` (km/h), `2` (mph), `3` (m/s).
+- **DiscordWebhookUrl** — Your Discord Webhook link for record notifications.
+- **AdminFlag** — The permission flag required to access the Admin Menu.
 
-DatabaseConnection — The Database ID defined in your Swiftly core.json.
-
-Prefix — Chat prefix for plugin messages.
-
-DefaultHudEnabled — Whether the HUD is on by default for new players.
-
-SpeedUnit — Unit of measurement: 0 (u/s), 1 (km/h), 2 (mph), 3 (m/s).
-
-DiscordWebhookUrl — Your Discord Webhook link for record notifications.
-
-AdminFlag — The permission flag required to access the Admin Menu.
-
-Example Config:
-JSON
-
-{
+### Example Config:
+```bash
+jsonc{
   "DatabaseConnection": "speedometer_db",
   "Prefix": "{DarkRed}[Extended-Speedmeter]{Default}",
   "DefaultHudEnabled": true,
@@ -73,34 +85,28 @@ JSON
   "SpeedometerHelpIntervalMinutes": 5,
   "DiscordWebhookUrl": "https://discord.com/api/webhooks/...",
   "AdminFlag": "@css/ban"
+  }
 }
-Commands
-Player Commands
-!speedmeter or !myspeed: Toggles the Speedometer HUD on/off.
+```
+## Commands
 
-!speedmeteredit: Opens the HUD, Color, and Overlay settings menu.
+- `!speedmeter` or `!myspeed`: Toggles the Speedometer HUD on/off.
+- `!speedmeteredit`: Opens the HUD, Color, and Overlay settings menu.
+- `!topspeed`: Shows records of currently online players.
+- `!topspeedmap`: Shows the top records for the current map.
+- `!topspeedtop`: Shows the all-time global top records.
+- `!topspeedpr`: Lists your personal records.
+- `!topspeedmaplist`: Displays a list of all recorded maps.
+- `!topspeedhelp`: Shows help messages for commands.
 
-!topspeed: Shows records of currently online players.
+### Admin Commands
 
-!topspeedmap: Shows the top records for the current map.
+- `!topspeedadmin`: Opens the **Management Panel** to delete, edit, or reset records.
 
-!topspeedtop: Shows the all-time global top records.
-
-!topspeedpr: Lists your personal records.
-
-!topspeedmaplist: Displays a list of all recorded maps.
-
-!topspeedhelp: Shows help messages for commands.
-
-Admin Commands
-!topspeedadmin: Opens the Management Panel to delete, edit, or reset records.
-
-Database Structure
+## Database Structure
 The plugin automatically creates the necessary tables:
+- `speedometer_data`: Stores player preferences (HUD toggles, colors).
+- `topspeed_records`: Stores Map, Speed, Reach Time, and Player info.
 
-speedometer_data: Stores player preferences (HUD toggles, colors).
-
-topspeed_records: Stores Map, Speed, Reach Time, and Player info.
-
-Author
-PoncikMarket (Discord: poncikmarket)
+## Author
+- PoncikMarket (Discord: `poncikmarket`)
