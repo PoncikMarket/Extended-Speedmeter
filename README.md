@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://github.com/swiftly-solution/swiftlys2/assets/114662867/5666f777-6272-47a3-b264-bf6725339239" alt="Extended-Speedmeter Banner" /> 
+  <img src="https://camo.githubusercontent.com/15411371090ab808f4644366f83bf2871aeacd208b2879fbe87f562a20150a3d/68747470733a2f2f70616e2e73616d7979632e6465762f732f56596d4d5845" />
 </p>
 
 A high-performance, feature-rich Speedometer and TopSpeed Record tracking plugin for Counter-Strike 2, built on the Swiftly framework.
