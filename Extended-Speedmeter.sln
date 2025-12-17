@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs2-speedmeter", "cs2-speedmeter.csproj", "{53C51168-A8F4-B8EF-30D6-9CEE79AACEBD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Extended-Speedmeter", "Extended-Speedmeter.csproj", "{53C51168-A8F4-B8EF-30D6-9CEE79AACEBD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
