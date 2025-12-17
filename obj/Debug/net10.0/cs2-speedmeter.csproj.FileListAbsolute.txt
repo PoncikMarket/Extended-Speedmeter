@@ -21,3 +21,5 @@ C:\Users\yusuf\OneDrive\Masaüstü\Swiftly Plugins Own\cs2-speedmeter\build\net1
 C:\Users\yusuf\OneDrive\Masaüstü\Swiftly Plugins Own\cs2-speedmeter\build\net10.0\resources\translations\zh-CN.jsonc
 C:\Users\yusuf\OneDrive\Masaüstü\Swiftly Plugins Own\cs2-speedmeter\build\net10.0\resources\translations\en.jsonc
 C:\Users\yusuf\OneDrive\Masaüstü\Swiftly Plugins Own\cs2-speedmeter\build\net10.0\resources\translations\tr.jsonc
+C:\Users\yusuf\OneDrive\Masaüstü\Swiftly Plugins Own\cs2-speedmeter\obj\Debug\net10.0\cs2-speedmeter.sourcelink.json
+C:\Users\yusuf\OneDrive\Masaüstü\Swiftly Plugins Own\cs2-speedmeter\build\net10.0\resources\payload.json

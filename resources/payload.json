@@ -1,0 +1,40 @@
+{
+  "username": "{webhook_name}",
+  "avatar_url": "{webhook_avatar}",
+  "content": "",
+  "embeds": [
+    {
+      "title": "🏆 NEW RECORD BROKEN!",
+      "description": "**{player_name}** has set a new speed record on the server!",
+      "color": 16761035,
+      "fields": [
+        {
+          "name": "Map",
+          "value": "{map}",
+          "inline": true
+        },
+        {
+          "name": "Speed",
+          "value": "**{speed}** u/s",
+          "inline": true
+        },
+        {
+          "name": "Player",
+          "value": "{player_name}",
+          "inline": true
+        },
+        {
+          "name": "Date & Time",
+          "value": "{date} - {time}",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "{server_name}"
+      },
+      "thumbnail": {
+          "url": "https://i.imgur.com/w3duR07.png"
+      }
+    }
+  ]
+}

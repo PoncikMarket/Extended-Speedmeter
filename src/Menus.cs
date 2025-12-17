@@ -7,6 +7,7 @@ using SwiftlyS2.Core.Menus.OptionsBase;
 using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Core;
 using SwiftlyS2.Shared.Translation;
+using System.Linq;
 
 namespace Speedometer;
 
@@ -22,10 +23,30 @@ public partial class Speedometer
         Menus.OpenMenuForPlayer(player, builder.Build());
     }
 
-    // YARDIMCI: Gradient metin oluşturucu
     private string Gradient(string text, string color1, string color2)
     {
         return HtmlGradient.GenerateGradientText(text, color1, color2);
+    }
+
+    private string SafeFormat(string text, params object[] args)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        try
+        {
+            for (int i = 0; i < args.Length; i++)
+            {
+                text = text.Replace($"{{{i}}}", args[i]?.ToString() ?? "");
+            }
+            return text;
+        }
+        catch { return text; }
+    }
+
+    private string GetText(IPlayer p, string key, params object[] args)
+    {
+        var localizer = Translation.GetPlayerLocalizer(p);
+        string raw = localizer[key] ?? key; 
+        return SafeFormat(raw, args);
     }
 
     public void OpenMainMenu(IPlayer player)
@@ -33,17 +54,14 @@ public partial class Speedometer
         var builder = Menus.CreateBuilder();
         var localizer = Translation.GetPlayerLocalizer(player);
 
-        // Başlık
         builder.Design.SetMenuTitle(Gradient(localizer["menu.title.main"], "#00FFFF", "#0000FF"));
         builder.Design.SetMaxVisibleItems(5);
 
-        // HUD Ayarları
         string hudText = Gradient(localizer["menu.option.hud"], "#FFA500", "#FF4500");
-        var btnHudOptions = new ButtonMenuOption(hudText) { MaxWidth = 100f }; // Genişlik arttırıldı
+        var btnHudOptions = new ButtonMenuOption(hudText) { MaxWidth = 100f };
         btnHudOptions.Click += (sender, args) => { OpenHudOptionsMenu(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnHudOptions);
 
-        // TopSpeed Menüsü
         string tsText = Gradient(localizer["menu.option.topspeed"] ?? "TopSpeed Menu", "#00FF00", "#00FFFF");
         var btnTopSpeed = new ButtonMenuOption(tsText) { MaxWidth = 100f };
         btnTopSpeed.Click += (sender, args) => { OpenTopSpeedMenu(args.Player); return ValueTask.CompletedTask; };
@@ -51,7 +69,6 @@ public partial class Speedometer
         
         if (Speedometer.Instance.SwiftlyCore.Permission.PlayerHasPermission(player.SteamID, Config.AdminFlag))
         {
-            // Admin
             string adminText = Gradient("ADMIN MENU", "#FF0000", "#FF00FF");
             var btnAdmin = new ButtonMenuOption(adminText) { MaxWidth = 100f };
             btnAdmin.Click += (sender, args) => { OpenAdminMenu(args.Player); return ValueTask.CompletedTask; };
@@ -68,37 +85,31 @@ public partial class Speedometer
         builder.Design.SetMenuTitle(Gradient(localizer["menu.title.hud"], "#FFA500", "#FF4500"));
         builder.Design.SetMaxVisibleItems(5);
 
-        // Renk Değiştir
         var btnColor = new ButtonMenuOption(Gradient(localizer["menu.option.speedcolor"], "#008000", "#00FF00")) { MaxWidth = 100f };
         btnColor.Click += (sender, args) => { OpenColorMenu(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnColor);
 
-        // --- Toggle Butonları ---
-        string On = $"<font color='#00FF00'>{localizer["menu.status.enabled"]}</font>";
-        string Off = $"<font color='#FF0000'>{localizer["menu.status.disabled"]}</font>";
+        string IconOn = "<font color='#00FF00'>[ ✔ ]</font>";
+        string IconOff = "<font color='#FF0000'>[ ✖ ]</font>";
 
-        // Round Stats
         bool isRoundStatsOn = _showRoundStats[player.PlayerID];
         string roundText = Gradient("Round Stats", "#FFFF00", "#FFA500");
-        var btnRoundStats = new ButtonMenuOption($"{roundText} {(isRoundStatsOn ? On : Off)}") { MaxWidth = 100f }; // Genişlik arttırıldı
+        var btnRoundStats = new ButtonMenuOption($"{roundText} {(isRoundStatsOn ? IconOn : IconOff)}") { MaxWidth = 100f }; 
         btnRoundStats.Click += (sender, args) => { ToggleSetting(args.Player, "round"); return ValueTask.CompletedTask; };
         builder.AddOption(btnRoundStats);
 
-        // Key Overlay
         bool isOverlayOn = _isKeyOverlayActive[player.PlayerID];
         string keyText = Gradient(localizer["menu.option.keyoverlay"], "#FFFF00", "#FFA500");
-        var btnOverlay = new ButtonMenuOption($"{keyText} {(isOverlayOn ? On : Off)}") { MaxWidth = 100f }; // Genişlik arttırıldı
+        var btnOverlay = new ButtonMenuOption($"{keyText} {(isOverlayOn ? IconOn : IconOff)}") { MaxWidth = 100f }; 
         btnOverlay.Click += (sender, args) => { ToggleSetting(args.Player, "key"); return ValueTask.CompletedTask; };
         builder.AddOption(btnOverlay);
 
-        // Jumps
         bool isJumpsOn = _showJumps[player.PlayerID];
         string jumpText = Gradient(localizer["menu.option.jumpsoverlay"], "#FFFF00", "#FFA500");
-        var btnJumps = new ButtonMenuOption($"{jumpText} {(isJumpsOn ? On : Off)}") { MaxWidth = 100f }; // Genişlik arttırıldı
+        var btnJumps = new ButtonMenuOption($"{jumpText} {(isJumpsOn ? IconOn : IconOff)}") { MaxWidth = 100f }; 
         btnJumps.Click += (sender, args) => { ToggleSetting(args.Player, "jump"); return ValueTask.CompletedTask; };
         builder.AddOption(btnJumps);
 
-        // Back
         var btnBack = new ButtonMenuOption(Gradient(localizer["menu.back"], "#FF0000", "#8B0000")) { MaxWidth = 100f };
         btnBack.Click += (sender, args) => { OpenMainMenu(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnBack);
@@ -112,29 +123,24 @@ public partial class Speedometer
         var localizer = Translation.GetPlayerLocalizer(player);
         builder.Design.SetMenuTitle(Gradient(localizer["menu.title.topspeed"] ?? "TopSpeed", "#00FF00", "#00FFFF"));
 
-        // Online
         var btnOnline = new ButtonMenuOption(Gradient(localizer["menu.topspeed.online"] ?? "Online Players", "#00BFFF", "#1E90FF")) { MaxWidth = 100f };
         btnOnline.Click += (sender, args) => { ShowOnlineRecords(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnOnline);
 
-        // Current
         var btnCurrent = new ButtonMenuOption(Gradient(localizer["menu.topspeed.current"] ?? "Current Map", "#90EE90", "#006400")) { MaxWidth = 100f };
         btnCurrent.Click += (sender, args) => { ShowCurrentMapRecords(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnCurrent);
 
-        // Map List
         var btnMapList = new ButtonMenuOption(Gradient(localizer["menu.option.maplist"] ?? "Map List", "#00FFFF", "#008B8B")) { MaxWidth = 100f };
         btnMapList.Click += (sender, args) => { OpenMapListMenu(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnMapList);
 
-        // Global
         var btnGlobal = new ButtonMenuOption(Gradient(localizer["menu.topspeed.global"] ?? "Global Top", "#EE82EE", "#800080")) { MaxWidth = 100f };
         btnGlobal.Click += (sender, args) => { ShowGlobalRecords(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnGlobal);
 
-        // PR
         var btnPr = new ButtonMenuOption(Gradient(localizer["menu.topspeed.personal"] ?? "Personal Record", "#FFD700", "#DAA520")) { MaxWidth = 100f };
-        btnPr.Click += (sender, args) => { ShowPersonalRecords(args.Player); return ValueTask.CompletedTask; };
+        btnPr.Click += (sender, args) => { OpenPersonalRecordsMenu(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnPr);
 
         var btnBack = new ButtonMenuOption(Gradient(localizer["menu.back"], "#FF0000", "#8B0000")) { MaxWidth = 100f };
@@ -152,10 +158,9 @@ public partial class Speedometer
             builder.Design.SetMenuTitle(Gradient("Map List", "#FFA500", "#FFFF00"));
             
             foreach (var item in maps) {
-                // Harita İsimleri (Uzun olabilir)
                 string mapNameColored = Gradient($"{item.MapName} ({item.Count})", "#00FFFF", "#0080FF");
-                var btnMap = new ButtonMenuOption(mapNameColored) { MaxWidth = 100f }; // Genişlik arttırıldı
-                btnMap.Click += (sender, args) => { PrintRecordsForSpecificMap(args.Player, item.MapName); return ValueTask.CompletedTask; };
+                var btnMap = new ButtonMenuOption(mapNameColored) { MaxWidth = 100f };
+                btnMap.Click += (sender, args) => { OpenMapRecordsMenu(args.Player, item.MapName); return ValueTask.CompletedTask; };
                 builder.AddOption(btnMap);
             }
             var btnBack = new ButtonMenuOption(Gradient("Back", "#FF0000", "#8B0000")) { MaxWidth = 100f };
@@ -165,22 +170,106 @@ public partial class Speedometer
         });
     }
     
-    private void PrintRecordsForSpecificMap(IPlayer player, string mapName)
+    public void OpenMapRecordsMenu(IPlayer player, string mapName)
     {
         Task.Run(async () => {
-            var records = await DatabaseManager.GetMapTopRecordsAsync(mapName, 10);
-            var localizer = Translation.GetPlayerLocalizer(player);
-            string prefix = Globals.ProcessColors(Speedometer.Config.Prefix);
-            if (records.Count == 0) { _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.norecords"])}")); return; }
-            _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.header.map", mapName])}"));
-            int rank = 1;
-            foreach (var r in records) {
-                string speedStr = Globals.FormatSpeed(r.velocity);
-                string line = localizer["topspeed.list.entry", rank, r.player_name, speedStr, r.reach_time.ToString("F2")];
-                _chatQueue.Enqueue((player, Globals.ProcessColors(line)));
-                rank++;
+            var records = await DatabaseManager.GetMapTopRecordsAsync(mapName, 50);
+            var builder = Menus.CreateBuilder();
+            builder.Design.SetMenuTitle(Gradient($"{mapName} Records", "#FFA500", "#FFFF00"));
+            
+            if (records.Count == 0) 
+            {
+                builder.AddOption(new ButtonMenuOption("No records") { MaxWidth = 100f, Enabled = false });
+            } 
+            else 
+            {
+                int rank = 1;
+                foreach (var rec in records) {
+                    string color = rank <= 3 ? "#FFD700" : "#FFFFFF";
+                    string text = Gradient($"{rank}. {rec.player_name} - {Globals.FormatSpeed(rec.velocity)}", color, color);
+                    
+                    var btn = new ButtonMenuOption(text) { MaxWidth = 100f };
+                    var currentRecord = rec;
+                    var currentRank = rank;
+                    btn.Click += (s, a) => { OpenRecordDetailsMenu(a.Player, currentRecord, currentRank); return ValueTask.CompletedTask; };
+                    builder.AddOption(btn);
+                    rank++;
+                }
             }
+            
+            var btnBack = new ButtonMenuOption(Gradient("Back", "#FF0000", "#8B0000")) { MaxWidth = 100f };
+            btnBack.Click += (s, a) => { OpenMapListMenu(a.Player); return ValueTask.CompletedTask; };
+            builder.AddOption(btnBack);
+            Menus.OpenMenuForPlayer(player, builder.Build());
         });
+    }
+
+    public void OpenRecordDetailsMenu(IPlayer player, TopSpeedRecord record, int rank)
+    {
+        var builder = Menus.CreateBuilder();
+        string titleColor = rank > 0 ? (rank <= 3 ? "#FFD700" : "#FFFFFF") : "#FF00FF";
+        string titleText = rank > 0 ? $"{record.player_name} #{rank}" : $"{record.player_name}";
+        builder.Design.SetMenuTitle(Gradient(titleText, titleColor, titleColor));
+
+        builder.AddOption(new ButtonMenuOption($"Map: {record.map_name}") { MaxWidth = 100f, Enabled = false });
+        builder.AddOption(new ButtonMenuOption($"Speed: {Globals.FormatSpeed(record.velocity)}") { MaxWidth = 100f, Enabled = false });
+        builder.AddOption(new ButtonMenuOption($"Time: {record.reach_time:F2}s") { MaxWidth = 100f, Enabled = false });
+        builder.AddOption(new ButtonMenuOption($"Date: {record.date_achieved:yyyy-MM-dd}") { MaxWidth = 100f, Enabled = false });
+
+        var btnBack = new ButtonMenuOption(Gradient("Back", "#FF0000", "#8B0000")) { MaxWidth = 100f };
+        btnBack.Click += (s, a) => {
+            if (rank > 0) OpenMapRecordsMenu(a.Player, record.map_name);
+            else OpenPersonalRecordsMenu(a.Player);
+            return ValueTask.CompletedTask; 
+        };
+        builder.AddOption(btnBack);
+        Menus.OpenMenuForPlayer(player, builder.Build());
+    }
+
+    public void OpenPersonalRecordsMenu(IPlayer player)
+    {
+        Task.Run(async () => {
+            var records = await DatabaseManager.GetPlayerAllRecordsAsync(player.SteamID.ToString());
+            var builder = Menus.CreateBuilder();
+            builder.Design.SetMenuTitle(Gradient("Personal Records", "#FF00FF", "#800080"));
+
+            if (records.Count == 0) {
+                builder.AddOption(new ButtonMenuOption("No records") { MaxWidth = 100f, Enabled = false });
+            } else {
+                foreach (var rec in records) {
+                    string txt = Gradient($"{rec.map_name}: {Globals.FormatSpeed(rec.velocity)}", "#FFFFFF", "#AAAAAA");
+                    var btn = new ButtonMenuOption(txt) { MaxWidth = 100f };
+                    var currentRecord = rec;
+                    btn.Click += (s, a) => { OpenRecordDetailsMenu(a.Player, currentRecord, 0); return ValueTask.CompletedTask; }; 
+                    builder.AddOption(btn);
+                }
+            }
+            var btnBack = new ButtonMenuOption(Gradient("Back", "#FF0000", "#8B0000")) { MaxWidth = 100f };
+            btnBack.Click += (s, a) => { OpenTopSpeedMenu(a.Player); return ValueTask.CompletedTask; };
+            builder.AddOption(btnBack);
+            Menus.OpenMenuForPlayer(player, builder.Build());
+        });
+    }
+
+    private void ToggleSetting(IPlayer player, string type)
+    {
+        int pid = player.PlayerID;
+        bool newState = false;
+        string featureName = "Unknown";
+        
+        if (type == "key") { _isKeyOverlayActive[pid] = !_isKeyOverlayActive[pid]; newState = _isKeyOverlayActive[pid]; featureName = "Key Overlay"; }
+        else if (type == "jump") { _showJumps[pid] = !_showJumps[pid]; newState = _showJumps[pid]; featureName = "Jump Stats"; }
+        else if (type == "round") { _showRoundStats[pid] = !_showRoundStats[pid]; newState = _showRoundStats[pid]; featureName = "Round Stats"; }
+
+        SavePlayerData(player);
+        var localizer = Translation.GetPlayerLocalizer(player);
+        
+        string statusKey = newState ? "menu.status.enabled" : "menu.status.disabled";
+        string statusText = localizer[statusKey] ?? (newState ? "Enabled" : "Disabled");
+        string colorCode = newState ? Helper.ChatColors.Green : Helper.ChatColors.Red;
+
+        Speedometer.Instance._chatQueue.Enqueue((player, $"{Globals.ProcessColors(localizer["speedometer.prefix"])} {Globals.ProcessColors(featureName)}: {colorCode}{statusText}")); 
+        OpenHudOptionsMenu(player);
     }
 
     public void OpenAdminMenu(IPlayer player)
@@ -189,44 +278,62 @@ public partial class Speedometer
         var localizer = Translation.GetPlayerLocalizer(player);
         builder.Design.SetMenuTitle(Gradient(localizer["menu.admin.title"] ?? "TopSpeed Admin", "#FF0000", "#800000"));
         
-        // Reset Map
-        string resetMapRaw = localizer["menu.admin.reset_map"] ?? "Reset Records (This Map)";
-        string resetMapColored = Gradient(resetMapRaw, "#00FF00", "#006400");
+        string resetMapColored = Gradient(localizer["menu.admin.reset_map"] ?? "Reset Records (This Map)", "#00FF00", "#006400");
         var btnResetMap = new ButtonMenuOption(resetMapColored) { MaxWidth = 100f };
         btnResetMap.Click += (sender, args) => {
-            Task.Run(async () => { await DatabaseManager.DeleteAllRecordsOnMapAsync(Speedometer.CurrentMapName); });
-            for (int i = 0; i < 65; i++) _playerDbMaxSpeed[i] = 0;
-            _chatQueue.Enqueue((args.Player, $"{Globals.ProcessColors(Config.Prefix)} {Helper.ChatColors.Red}{localizer["topspeed.admin.deleted"] ?? "Deleted!"}"));
+            Task.Run(async () => { 
+                await DatabaseManager.DeleteAllRecordsOnMapAsync(Speedometer.CurrentMapName); 
+                await Speedometer.Instance.RefreshServerRecord();
+            });
+
+            for (int i = 0; i < 65; i++)
+            {
+                Speedometer.Instance._playerDbMaxSpeed[i] = 0;
+                Speedometer.Instance._playerDbReachTime[i] = 0.0f;
+                Speedometer.Instance._isBreakingRecord[i] = false;
+                Speedometer.Instance._tempPeakSpeed[i] = 0;
+            }
+
+            string msg = localizer["topspeed.admin.deleted"] ?? "{DarkRed}Deleted!{Default}";
+            Speedometer.Instance._chatQueue.Enqueue((args.Player, $"{Globals.ProcessColors(Config.Prefix)} {Globals.ProcessColors(msg)}"));
             return ValueTask.CompletedTask;
         };
         builder.AddOption(btnResetMap);
 
-        // Delete Diff
-        string deleteDiffRaw = localizer["menu.admin.delete_diff"] ?? "Delete Record (Select Map)";
-        string deleteDiffColored = Gradient(deleteDiffRaw, "#00FFFF", "#0000FF");
+        string deleteDiffColored = Gradient(localizer["menu.admin.delete_diff"] ?? "Delete Record (Select Map)", "#00FFFF", "#0000FF");
         var btnDeleteDiff = new ButtonMenuOption(deleteDiffColored) { MaxWidth = 100f };
         btnDeleteDiff.Click += (sender, args) => { OpenDeleteDifferentMapMenu(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnDeleteDiff);
 
-        // Manage Player
         var btnManagePlayer = new ButtonMenuOption(Gradient(localizer["menu.admin.manage_player"] ?? "Manage Player", "#FFFF00", "#FFA500")) { MaxWidth = 100f };
         btnManagePlayer.Click += (sender, args) => { 
             Globals.AdminEditStates[args.Player.PlayerID] = new Globals.AdminEditState { ActionType = "SEARCH_PLAYER" };
             string prefix = Globals.ProcessColors(Config.Prefix);
-            _chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.search_prompt"])}"));
+            string msg = localizer["chat.admin.search_prompt"] ?? "Enter partial player name in chat:";
+            Speedometer.Instance._chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(msg)}"));
             ClosePlayerMenu(args.Player);
             return ValueTask.CompletedTask; 
         };
         builder.AddOption(btnManagePlayer);
 
-        // Reset All
-        string resetAllRaw = localizer["menu.admin.reset_all"] ?? "Reset ALL Records";
-        string resetAllColored = Gradient(resetAllRaw, "#FF0000", "#8B0000");
+        string resetAllColored = Gradient(localizer["menu.admin.reset_all"] ?? "Reset ALL Records", "#FF0000", "#8B0000");
         var btnResetAll = new ButtonMenuOption(resetAllColored) { MaxWidth = 100f };
         btnResetAll.Click += (sender, args) => {
-            Task.Run(async () => { await DatabaseManager.DeleteAllRecordsAsync(); });
-            for (int i = 0; i < 65; i++) _playerDbMaxSpeed[i] = 0;
-            _chatQueue.Enqueue((args.Player, $"{Globals.ProcessColors(Config.Prefix)} {Helper.ChatColors.Red}{localizer["topspeed.admin.resetall"] ?? "All reset!"}"));
+            Task.Run(async () => { 
+                await DatabaseManager.DeleteAllRecordsAsync(); 
+                await Speedometer.Instance.RefreshServerRecord();
+            });
+
+            for (int i = 0; i < 65; i++)
+            {
+                Speedometer.Instance._playerDbMaxSpeed[i] = 0;
+                Speedometer.Instance._playerDbReachTime[i] = 0.0f;
+                Speedometer.Instance._isBreakingRecord[i] = false;
+                Speedometer.Instance._tempPeakSpeed[i] = 0;
+            }
+
+            string msg = localizer["topspeed.admin.resetall"] ?? "{DarkRed}All reset!{Default}";
+            Speedometer.Instance._chatQueue.Enqueue((args.Player, $"{Globals.ProcessColors(Config.Prefix)} {Globals.ProcessColors(msg)}"));
             return ValueTask.CompletedTask;
         };
         builder.AddOption(btnResetAll);
@@ -248,7 +355,7 @@ public partial class Speedometer
             
             foreach (var item in maps) {
                 string mapText = Gradient($"{item.MapName} ({item.Count})", "#00FFFF", "#0080FF");
-                var btnMap = new ButtonMenuOption(mapText) { MaxWidth = 100f }; // Genişlik arttırıldı
+                var btnMap = new ButtonMenuOption(mapText) { MaxWidth = 100f }; 
                 btnMap.Click += (sender, args) => { OpenDeleteRecordsForMapMenu(args.Player, item.MapName); return ValueTask.CompletedTask; };
                 builder.AddOption(btnMap);
             }
@@ -265,19 +372,40 @@ public partial class Speedometer
             var records = await DatabaseManager.GetMapTopRecordsAsync(mapName, 50); 
             var builder = Menus.CreateBuilder();
             var localizer = Translation.GetPlayerLocalizer(player);
-            builder.Design.SetMenuTitle(localizer["menu.admin.delete_header", mapName]);
+            string titleRaw = localizer["menu.admin.delete_header"] ?? $"Delete Records - {mapName}";
+            builder.Design.SetMenuTitle(SafeFormat(titleRaw, mapName));
             
             if (records.Count == 0) builder.AddOption(new ButtonMenuOption(localizer["menu.admin.no_records"] ?? "No records."));
             else {
                 foreach (var rec in records) {
-                    // Kayıtlar uzun olabilir, MaxWidth burada çok önemli
                     string recordText = Gradient($"{rec.player_name} ({rec.velocity} u/s - {rec.reach_time:F2}s)", "#FFFFFF", "#AAAAAA");
-                    var btnDel = new ButtonMenuOption(recordText) { MaxWidth = 100f }; // Genişlik arttırıldı
+                    var btnDel = new ButtonMenuOption(recordText) { MaxWidth = 100f }; 
                     btnDel.Click += (sender, args) => {
                         Task.Run(async () => {
                             await DatabaseManager.DeletePlayerRecordAsync(rec.steamid, mapName);
+                            
+                            if (mapName == Speedometer.CurrentMapName) 
+                            {
+                                await Speedometer.Instance.RefreshServerRecord();
+                                
+                                var allPlayers = Speedometer.Instance.SwiftlyCore.PlayerManager.GetAllPlayers();
+                                foreach (var p in allPlayers)
+                                {
+                                    if (p.SteamID.ToString() == rec.steamid)
+                                    {
+                                        Speedometer.Instance._playerDbMaxSpeed[p.PlayerID] = 0;
+                                        Speedometer.Instance._playerDbReachTime[p.PlayerID] = 0.0f;
+                                        Speedometer.Instance._isBreakingRecord[p.PlayerID] = false;
+                                        Speedometer.Instance._tempPeakSpeed[p.PlayerID] = 0;
+                                        break;
+                                    }
+                                }
+                            }
+
                             string prefix = Globals.ProcessColors(Config.Prefix);
-                            _chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.record_deleted", rec.player_name, mapName])}"));
+                            string delMsg = localizer["chat.admin.record_deleted"] ?? "Deleted {0} on {1}";
+                            string formatted = SafeFormat(delMsg, rec.player_name, mapName);
+                            Speedometer.Instance._chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(formatted)}"));
                             OpenDeleteRecordsForMapMenu(args.Player, mapName);
                         });
                         return ValueTask.CompletedTask;
@@ -304,7 +432,8 @@ public partial class Speedometer
                 var results = await DatabaseManager.SearchPlayersByNameAsync(input);
                 Globals.AdminEditStates.TryRemove(pid, out _); 
                 if (results.Count == 0) {
-                    _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.player_not_found"])}"));
+                    string msg = localizer["chat.admin.player_not_found"] ?? "{DarkRed}Player not found.{Default}";
+                    Speedometer.Instance._chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(msg)}"));
                     return;
                 }
                 OpenAdminPlayerSelectMenu(player, results);
@@ -319,13 +448,30 @@ public partial class Speedometer
                     var rec = await DatabaseManager.GetPlayerMapRecordAsync(state.TargetSteamID, state.TargetMap);
                     if (rec != null) {
                         await DatabaseManager.UpdatePlayerRecordValueAsync(state.TargetSteamID, state.TargetMap, newSpeed, rec.reach_time);
-                        _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.speed_updated", rec.player_name, state.TargetMap, newSpeed])}"));
+                        if (state.TargetMap == Speedometer.CurrentMapName) 
+                        {
+                            await Speedometer.Instance.RefreshServerRecord();
+                            var allPlayers = Speedometer.Instance.SwiftlyCore.PlayerManager.GetAllPlayers();
+                            foreach (var p in allPlayers)
+                            {
+                                if (p.SteamID.ToString() == state.TargetSteamID)
+                                {
+                                    Speedometer.Instance._playerDbMaxSpeed[p.PlayerID] = newSpeed;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        string msg = localizer["chat.admin.speed_updated"] ?? "Speed updated for {0} on {1} to {2}";
+                        string formatted = SafeFormat(msg, rec.player_name, state.TargetMap, newSpeed);
+                        Speedometer.Instance._chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(formatted)}"));
                     }
                     OpenAdminRecordEditMenu(player, state.TargetSteamID, rec?.player_name ?? "Unknown", state.TargetMap);
                 });
             }
             else {
-                _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.invalid_speed"])}"));
+                string msg = localizer["chat.admin.invalid_speed"] ?? "{DarkRed}Invalid speed!{Default}";
+                Speedometer.Instance._chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(msg)}"));
                 Task.Run(async () => {
                     var rec = await DatabaseManager.GetPlayerMapRecordAsync(state.TargetSteamID, state.TargetMap);
                     OpenAdminRecordEditMenu(player, state.TargetSteamID, rec?.player_name ?? "Unknown", state.TargetMap);
@@ -341,13 +487,30 @@ public partial class Speedometer
                     var rec = await DatabaseManager.GetPlayerMapRecordAsync(state.TargetSteamID, state.TargetMap);
                     if (rec != null) {
                         await DatabaseManager.UpdatePlayerRecordValueAsync(state.TargetSteamID, state.TargetMap, rec.velocity, newTime);
-                        _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.time_updated", rec.player_name, state.TargetMap, newTime.ToString("F2")])}"));
+                        
+                        if (state.TargetMap == Speedometer.CurrentMapName)
+                        {
+                            var allPlayers = Speedometer.Instance.SwiftlyCore.PlayerManager.GetAllPlayers();
+                            foreach (var p in allPlayers)
+                            {
+                                if (p.SteamID.ToString() == state.TargetSteamID)
+                                {
+                                    Speedometer.Instance._playerDbReachTime[p.PlayerID] = newTime;
+                                    break;
+                                }
+                            }
+                        }
+
+                        string msg = localizer["chat.admin.time_updated"] ?? "Time updated for {0} on {1} to {2}";
+                        string formatted = SafeFormat(msg, rec.player_name, state.TargetMap, newTime.ToString("F2"));
+                        Speedometer.Instance._chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(formatted)}"));
                     }
                     OpenAdminRecordEditMenu(player, state.TargetSteamID, rec?.player_name ?? "Unknown", state.TargetMap);
                 });
             }
             else {
-                _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.invalid_time"])}"));
+                string msg = localizer["chat.admin.invalid_time"] ?? "{DarkRed}Invalid time!{Default}";
+                Speedometer.Instance._chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(msg)}"));
                 Task.Run(async () => {
                     var rec = await DatabaseManager.GetPlayerMapRecordAsync(state.TargetSteamID, state.TargetMap);
                     OpenAdminRecordEditMenu(player, state.TargetSteamID, rec?.player_name ?? "Unknown", state.TargetMap);
@@ -362,7 +525,7 @@ public partial class Speedometer
         var localizer = Translation.GetPlayerLocalizer(player);
         builder.Design.SetMenuTitle(localizer["menu.admin.select_player"] ?? "Select Player");
         foreach (var p in players) {
-            var btn = new ButtonMenuOption(p.Name) { MaxWidth = 100f }; // Genişlik arttırıldı
+            var btn = new ButtonMenuOption(p.Name) { MaxWidth = 100f };
             btn.Click += (sender, args) => { OpenAdminPlayerMapSelectMenu(args.Player, p.SteamID, p.Name); return ValueTask.CompletedTask; };
             builder.AddOption(btn);
         }
@@ -378,10 +541,12 @@ public partial class Speedometer
             var maps = await DatabaseManager.GetPlayerMapsAsync(targetSteamID);
             var builder = Menus.CreateBuilder();
             var localizer = Translation.GetPlayerLocalizer(player);
-            builder.Design.SetMenuTitle(localizer["menu.admin.select_map_player", targetName]);
+            string title = localizer["menu.admin.select_map_player"] ?? $"Select Map ({targetName})";
+            builder.Design.SetMenuTitle(SafeFormat(title, targetName));
+            
             if (maps.Count == 0) builder.AddOption(new ButtonMenuOption(localizer["menu.admin.no_records"] ?? "No records."));
             foreach (var map in maps) {
-                var btn = new ButtonMenuOption(Gradient(map, "#00FFFF", "#0000FF")) { MaxWidth = 100f }; // Genişlik arttırıldı
+                var btn = new ButtonMenuOption(Gradient(map, "#00FFFF", "#0000FF")) { MaxWidth = 100f };
                 btn.Click += (sender, args) => { OpenAdminRecordEditMenu(args.Player, targetSteamID, targetName, map); return ValueTask.CompletedTask; };
                 builder.AddOption(btn);
             }
@@ -404,80 +569,48 @@ public partial class Speedometer
             else {
                 builder.AddOption(new ButtonMenuOption($"Speed: {rec.velocity} | Time: {rec.reach_time:F2}") { MaxWidth = 100f });
                 
-                var btnDel = new ButtonMenuOption(Globals.ProcessColors(HtmlGradient.GenerateGradientText(localizer["menu.admin.btn_delete"] ?? "DELETE", "#FF0000", "#8B0000"))) { MaxWidth = 100f };
+                var btnDel = new ButtonMenuOption(Gradient(localizer["menu.admin.btn_delete"] ?? "DELETE RECORD", "#FF0000", "#8B0000")) { MaxWidth = 100f };
                 btnDel.Click += (sender, args) => {
                     Task.Run(async () => {
                         await DatabaseManager.DeletePlayerRecordAsync(steamID, map);
+                        if (map == Speedometer.CurrentMapName) await Speedometer.Instance.RefreshServerRecord();
+                        
                         string prefix = Globals.ProcessColors(Config.Prefix);
-                        _chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.admin.deleted"] ?? "Deleted!")}"));
+                        string msg = localizer["topspeed.admin.deleted"] ?? "{DarkRed}Deleted!{Default}";
+                        Speedometer.Instance._chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(msg)}"));
                         ClosePlayerMenu(args.Player);
                     });
                     return ValueTask.CompletedTask;
                 };
                 builder.AddOption(btnDel);
 
-                var btnEditSpeed = new ButtonMenuOption(Globals.ProcessColors($"{{Green}}{localizer["menu.admin.btn_edit_speed"] ?? "Edit Speed"}")) { MaxWidth = 100f };
+                var btnEditSpeed = new ButtonMenuOption(Gradient(localizer["menu.admin.btn_edit_speed"] ?? "Edit Speed (Chat Input)", "#00FF00", "#006400")) { MaxWidth = 100f };
                 btnEditSpeed.Click += (sender, args) => {
                     Globals.AdminEditStates[args.Player.PlayerID] = new Globals.AdminEditState { ActionType = "EDIT_SPEED", TargetSteamID = steamID, TargetMap = map };
                     string prefix = Globals.ProcessColors(Config.Prefix);
-                    _chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.enter_speed"])}"));
+                    string msg = localizer["chat.admin.enter_speed"] ?? "Enter speed:";
+                    Speedometer.Instance._chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(msg)}"));
                     ClosePlayerMenu(args.Player);
                     return ValueTask.CompletedTask;
                 };
                 builder.AddOption(btnEditSpeed);
 
-                var btnEditTime = new ButtonMenuOption(Globals.ProcessColors($"{{Cyan}}{localizer["menu.admin.btn_edit_time"] ?? "Edit Time"}")) { MaxWidth = 100f };
+                var btnEditTime = new ButtonMenuOption(Gradient(localizer["menu.admin.btn_edit_time"] ?? "Edit Time (Chat Input)", "#00FFFF", "#0000FF")) { MaxWidth = 100f };
                 btnEditTime.Click += (sender, args) => {
                     Globals.AdminEditStates[args.Player.PlayerID] = new Globals.AdminEditState { ActionType = "EDIT_TIME", TargetSteamID = steamID, TargetMap = map };
                     string prefix = Globals.ProcessColors(Config.Prefix);
-                    _chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(localizer["chat.admin.enter_time"])}"));
+                    string msg = localizer["chat.admin.enter_time"] ?? "Enter time:";
+                    Speedometer.Instance._chatQueue.Enqueue((args.Player, $"{prefix} {Globals.ProcessColors(msg)}"));
                     ClosePlayerMenu(args.Player);
                     return ValueTask.CompletedTask;
                 };
                 builder.AddOption(btnEditTime);
             }
-            var btnBack = new ButtonMenuOption(Globals.ProcessColors($"{{Red}}{localizer["menu.admin.back_maplist"] ?? "Back"}")) { MaxWidth = 100f };
+            var btnBack = new ButtonMenuOption(Gradient(localizer["menu.admin.back_maplist"] ?? "Back to Map List", "#FF0000", "#8B0000")) { MaxWidth = 100f };
             btnBack.Click += (sender, args) => { OpenAdminPlayerMapSelectMenu(args.Player, steamID, name); return ValueTask.CompletedTask; };
             builder.AddOption(btnBack);
             Menus.OpenMenuForPlayer(player, builder.Build());
         });
-    }
-
-    private void ToggleSetting(IPlayer player, string type)
-    {
-        int pid = player.PlayerID;
-        bool newState = false;
-        string msgKey = "";
-        
-        if (type == "key") 
-        { 
-            _isKeyOverlayActive[pid] = !_isKeyOverlayActive[pid]; 
-            newState = _isKeyOverlayActive[pid]; 
-            msgKey = "speedometer.keyoverlay"; 
-        }
-        else if (type == "jump") 
-        { 
-            _showJumps[pid] = !_showJumps[pid]; 
-            newState = _showJumps[pid]; 
-            msgKey = "speedometer.jumpsoverlay"; 
-        }
-        else if (type == "round") 
-        {
-            _showRoundStats[pid] = !_showRoundStats[pid];
-            newState = _showRoundStats[pid];
-            msgKey = "menu.option.roundstats"; 
-        }
-
-        SavePlayerData(player);
-        var localizer = Translation.GetPlayerLocalizer(player);
-        string statusKey = newState ? "menu.status.enabled" : "menu.status.disabled";
-        string colorCode = newState ? Helper.ChatColors.Green : Helper.ChatColors.Red;
-        
-        string statusMsg = localizer[msgKey];
-        if (string.IsNullOrEmpty(statusMsg) && type == "round") statusMsg = "Round Stats";
-
-        _chatQueue.Enqueue((player, $"{Globals.ProcessColors(localizer["speedometer.prefix"])} {Globals.ProcessColors(localizer["speedometer.toggle", colorCode, localizer[statusKey]])}")); 
-        OpenHudOptionsMenu(player);
     }
 
     public void OpenColorMenu(IPlayer player)
@@ -490,18 +623,18 @@ public partial class Speedometer
         
         string rainbowRaw = localizer["menu.rainbow"] ?? "Rainbow";
         string rainbowColored = HtmlGradient.GenerateGradientText(rainbowRaw, "#FF0000", "#FFA500", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#8B00FF");
-        var btnRainbow = new ButtonMenuOption(rainbowColored) { MaxWidth = 100f }; // Genişlik arttırıldı
+        var btnRainbow = new ButtonMenuOption(rainbowColored) { MaxWidth = 100f }; 
         
         btnRainbow.Click += (sender, args) => { SetColor(args.Player, "RAINBOW", "Rainbow", Helper.ChatColors.LightBlue); return ValueTask.CompletedTask; };
         builder.AddOption(btnRainbow);
         
         foreach (var color in AvailableColors) {
             if (color.Key == "Rainbow") continue;
-            var button = new ButtonMenuOption($"<font color='{color.Value}'>{color.Key}</font>") { MaxWidth = 100f }; // Genişlik arttırıldı
+            var button = new ButtonMenuOption($"<font color='{color.Value}'>{color.Key}</font>") { MaxWidth = 100f };
             button.Click += (sender, args) => { SetColor(args.Player, color.Value, color.Key, Helper.ChatColors.Green); return ValueTask.CompletedTask; };
             builder.AddOption(button);
         }
-        var btnBack = new ButtonMenuOption(Globals.ProcessColors($"{{Red}}{localizer["menu.back"]}")) { MaxWidth = 100f };
+        var btnBack = new ButtonMenuOption(Gradient(localizer["menu.back"], "#FF0000", "#8B0000")) { MaxWidth = 100f };
         btnBack.Click += (sender, args) => { OpenHudOptionsMenu(args.Player); return ValueTask.CompletedTask; };
         builder.AddOption(btnBack);
         Menus.OpenMenuForPlayer(player, builder.Build());
@@ -513,7 +646,9 @@ public partial class Speedometer
         _playerColorChoices[pid] = hexCode;
         SavePlayerData(player);
         var localizer = Translation.GetPlayerLocalizer(player);
-        _chatQueue.Enqueue((player, $"{Globals.ProcessColors(localizer["speedometer.prefix"])} {Globals.ProcessColors(localizer["speedometer.colorset", chatColor, displayName])}"));
+        string msg = localizer["speedometer.colorset"] ?? "Color set to {0} ({1})";
+        string formatted = SafeFormat(msg, chatColor, displayName);
+        Speedometer.Instance._chatQueue.Enqueue((player, $"{Globals.ProcessColors(localizer["speedometer.prefix"])} {Globals.ProcessColors(formatted)}"));
         OpenHudOptionsMenu(player);
     }
 

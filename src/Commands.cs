@@ -14,13 +14,8 @@ namespace Speedometer;
 
 public partial class Speedometer
 {
-    // YENİ: Oyuncuların son komut kullanma zamanını tutar
-    private DateTime[] _lastCommandTime = new DateTime[65];
-
-    // YENİ: Cooldown Kontrol Fonksiyonu
     private bool CheckCommandCooldown(IPlayer player)
     {
-        // Adminler cooldown'a takılmasın (İsteğe bağlı, şimdilik herkese uyguladım, istersen admin check ekleyebiliriz)
         if (Config.CommandCooldownSeconds <= 0) return true;
 
         int pid = player.PlayerID;
@@ -32,17 +27,15 @@ public partial class Speedometer
             var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
             string remaining = (Config.CommandCooldownSeconds - diff).ToString("F1");
             string prefix = Globals.ProcessColors(Config.Prefix);
-            // "Lütfen bekleyiniz" mesajı (Translation dosyasına eklenecek)
-            string msg = localizer["general.cooldown", remaining]; 
-            // Eğer çeviri yoksa default bir mesaj gösterelim
-            if (string.IsNullOrEmpty(msg) || msg == "general.cooldown") msg = $"Please wait {remaining}s.";
+            string msg = localizer["general.cooldown"] ?? "Please wait {0} seconds.";
+            msg = msg.Replace("{0}", remaining);
             
             player.SendChat($"{prefix} {Globals.ProcessColors($"{{Red}}{msg}")}");
-            return false; // Engelle
+            return false;
         }
 
-        _lastCommandTime[pid] = now; // Zamanı güncelle
-        return true; // İzin ver
+        _lastCommandTime[pid] = now;
+        return true; 
     }
 
     [Command("speedmeter")]
@@ -54,8 +47,6 @@ public partial class Speedometer
     private void HandleSpeedometerToggle(ICommandContext context)
     {
         if (context.Sender is not IPlayer player) return;
-        
-        // Cooldown Kontrolü
         if (!CheckCommandCooldown(player)) return;
 
         int pId = player.PlayerID;
@@ -77,11 +68,12 @@ public partial class Speedometer
 
         var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
         string statusKey = _isSpeedometerActive[pId] ? "menu.status.enabled" : "menu.status.disabled";
-        string statusText = localizer[statusKey]; 
+        string statusText = localizer[statusKey] ?? (_isSpeedometerActive[pId] ? "ENABLED" : "DISABLED"); 
         string colorCode = _isSpeedometerActive[pId] ? Helper.ChatColors.Green : Helper.ChatColors.Red;
         
-        string prefix = Globals.ProcessColors(localizer["speedometer.prefix"]);
-        string message = localizer["speedometer.toggle", colorCode, statusText];
+        string prefix = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
+        string rawMsg = localizer["speedometer.toggle"] ?? "Speedometer is now {0}{1}{{Default}}.";
+        string message = rawMsg.Replace("{0}", colorCode).Replace("{1}", statusText);
         
         _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(message)}"));
     }
@@ -96,15 +88,13 @@ public partial class Speedometer
     private void OpenMainMenuSafe(ICommandContext context)
     {
         if (context.Sender is not IPlayer player) return;
-        // Menü açmak için cooldown koymuyorum, oyuncu ayar yaparken rahatsız olmasın.
         OpenMainMenu(player);
     }
 
-    // --- HELPER FUNCTIONS ---
     public void ShowOnlineRecords(IPlayer player)
     {
         var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
-        string prefix = Globals.ProcessColors(localizer["speedometer.prefix"]);
+        string prefix = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
         
         var onlinePlayers = Speedometer.Instance.SwiftlyCore.PlayerManager.GetAllPlayers()
             .Where(p => p != null && p.IsValid && !p.IsFakeClient)
@@ -122,16 +112,24 @@ public partial class Speedometer
             .ToList();
 
         if (!sessionList.Any()) {
-            string noRec = Globals.ProcessColors(localizer["topspeed.norecords"]);
+            string noRec = Globals.ProcessColors(localizer["topspeed.norecords"] ?? "{Red}No records found.");
             _chatQueue.Enqueue((player, $"{prefix} {noRec}"));
             return;
         }
 
-        _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.header.map", "Online Players"])}"));
+        string header = localizer["topspeed.header.map"] ?? "--- Top Records on {0} ---";
+        header = header.Replace("{0}", "Online Players");
+        _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(header)}"));
+        
         int rank = 1;
         foreach (var item in sessionList) {
             string speedStr = Globals.FormatSpeed(item.Speed);
-            string line = localizer["topspeed.list.entry", rank, item.Name, speedStr, item.Time.ToString("F2")];
+            string rawLine = localizer["topspeed.list.entry"] ?? "{0}. {1}: {2} ({3}s)";
+            string line = rawLine.Replace("{0}", rank.ToString())
+                                 .Replace("{1}", item.Name)
+                                 .Replace("{2}", speedStr)
+                                 .Replace("{3}", item.Time.ToString("F2"));
+                                 
             _chatQueue.Enqueue((player, Globals.ProcessColors(line)));
             rank++;
         }
@@ -142,13 +140,26 @@ public partial class Speedometer
         Task.Run(async () => {
             var records = await DatabaseManager.GetMapTopRecordsAsync(Speedometer.CurrentMapName, 10);
             var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
-            string prefix = Globals.ProcessColors(localizer["speedometer.prefix"]);
-            if (records.Count == 0) { _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.norecords"])}")); return; }
-            _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.header.map", Speedometer.CurrentMapName])}"));
+            string prefix = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
+            
+            if (records.Count == 0) { 
+                string noRec = Globals.ProcessColors(localizer["topspeed.norecords"] ?? "{Red}No records found.");
+                _chatQueue.Enqueue((player, $"{prefix} {noRec}")); 
+                return; 
+            }
+            
+            string header = localizer["topspeed.header.map"] ?? "--- Top Records on {0} ---";
+            header = header.Replace("{0}", Speedometer.CurrentMapName);
+            _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(header)}"));
+            
             int rank = 1;
             foreach (var r in records) {
                 string speedStr = Globals.FormatSpeed(r.velocity);
-                string line = localizer["topspeed.list.entry", rank, r.player_name, speedStr, r.reach_time.ToString("F2")];
+                string rawLine = localizer["topspeed.list.entry"] ?? "{0}. {1}: {2} ({3}s)";
+                string line = rawLine.Replace("{0}", rank.ToString())
+                                     .Replace("{1}", r.player_name)
+                                     .Replace("{2}", speedStr)
+                                     .Replace("{3}", r.reach_time.ToString("F2"));
                 _chatQueue.Enqueue((player, Globals.ProcessColors(line)));
                 rank++;
             }
@@ -160,13 +171,21 @@ public partial class Speedometer
         Task.Run(async () => {
             var records = await DatabaseManager.GetOverallTopRecordsAsync(10);
             var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
-            string prefix = Globals.ProcessColors(localizer["speedometer.prefix"]);
-            if (records.Count == 0) { _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.norecords"])}")); return; }
-            _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.header.top"])}"));
+            string prefix = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
+            
+            if (records.Count == 0) { 
+                string noRec = Globals.ProcessColors(localizer["topspeed.norecords"] ?? "{Red}No records found.");
+                _chatQueue.Enqueue((player, $"{prefix} {noRec}")); 
+                return; 
+            }
+            
+            string header = localizer["topspeed.header.top"] ?? "--- Global Records ---";
+            _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(header)}"));
+            
             int rank = 1;
             foreach (var r in records) {
                 string speedStr = Globals.FormatSpeed(r.velocity);
-                string entry = $"{rank}. {r.player_name} ({r.map_name}): {Helper.ChatColors.Green}{speedStr}{Helper.ChatColors.Default}";
+                string entry = $"{rank}. {r.player_name} ({r.map_name}): {{Green}}{speedStr}{{Default}}";
                 _chatQueue.Enqueue((player, Globals.ProcessColors(entry)));
                 rank++;
             }
@@ -178,28 +197,31 @@ public partial class Speedometer
         Task.Run(async () => {
             var records = await DatabaseManager.GetPlayerAllRecordsAsync(player.SteamID.ToString());
             var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
-            string prefix = Globals.ProcessColors(localizer["speedometer.prefix"]);
-            if (records.Count == 0) { _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.norecords"])}")); return; }
-            _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(localizer["topspeed.header.pr"])}"));
-            int count = 0;
+            string prefix = Globals.ProcessColors(localizer["speedometer.prefix"] ?? Config.Prefix);
+            
+            if (records.Count == 0) { 
+                string noRec = Globals.ProcessColors(localizer["topspeed.norecords"] ?? "{Red}No records found.");
+                _chatQueue.Enqueue((player, $"{prefix} {noRec}")); 
+                return; 
+            }
+            
+            string header = localizer["topspeed.header.pr"] ?? "--- Personal Records ---";
+            _chatQueue.Enqueue((player, $"{prefix} {Globals.ProcessColors(header)}"));
+            
             foreach (var r in records) {
-                if (count >= 5) break;
                 string speedStr = Globals.FormatSpeed(r.velocity);
-                string entry = $"- {r.map_name}: {Helper.ChatColors.Green}{speedStr}{Helper.ChatColors.Default} ({r.reach_time:F2}s)";
+                string entry = $"- {r.map_name}: {{Green}}{speedStr}{{Default}} ({r.reach_time:F2}s)";
                 _chatQueue.Enqueue((player, Globals.ProcessColors(entry)));
-                count++;
             }
         });
     }
-
-    // --- COMMAND HANDLERS ---
 
     [Command("topspeed")] 
     public void OnCmdTopSpeed(ICommandContext context) 
     { 
         if (context.Sender is IPlayer player) 
         {
-            if(!CheckCommandCooldown(player)) return; // Cooldown
+            if(!CheckCommandCooldown(player)) return; 
             ShowOnlineRecords(player); 
         }
     }
@@ -209,7 +231,7 @@ public partial class Speedometer
     { 
         if (context.Sender is IPlayer player) 
         {
-            if(!CheckCommandCooldown(player)) return; // Cooldown
+            if(!CheckCommandCooldown(player)) return;
             ShowCurrentMapRecords(player); 
         }
     }
@@ -219,7 +241,7 @@ public partial class Speedometer
     { 
         if (context.Sender is IPlayer player) 
         {
-            if(!CheckCommandCooldown(player)) return; // Cooldown
+            if(!CheckCommandCooldown(player)) return;
             ShowGlobalRecords(player); 
         }
     }
@@ -229,7 +251,7 @@ public partial class Speedometer
     { 
         if (context.Sender is IPlayer player) 
         {
-            if(!CheckCommandCooldown(player)) return; // Cooldown
+            if(!CheckCommandCooldown(player)) return;
             ShowPersonalRecords(player); 
         }
     }
@@ -239,7 +261,7 @@ public partial class Speedometer
     { 
         if (context.Sender is IPlayer player) 
         {
-            if(!CheckCommandCooldown(player)) return; // Cooldown
+            if(!CheckCommandCooldown(player)) return;
             OpenMapListMenu(player); 
         }
     }
@@ -248,7 +270,7 @@ public partial class Speedometer
     public void OnCmdTopSpeedHelp(ICommandContext context)
     {
         if (context.Sender is not IPlayer player) return;
-        if(!CheckCommandCooldown(player)) return; // Cooldown
+        if(!CheckCommandCooldown(player)) return;
 
         string p = Globals.ProcessColors(Config.Prefix);
         player.SendChat($"{p} {Globals.ProcessColors("{Green}!topspeed {Default}- Online oyuncu rekorlari")}");
@@ -262,7 +284,6 @@ public partial class Speedometer
     public void OnCmdAdminMenu(ICommandContext context)
     {
         if (context.Sender is not IPlayer player) return;
-        // Admin menüsünde cooldown olmamalı
         if (!Speedometer.Instance.SwiftlyCore.Permission.PlayerHasPermission(player.SteamID, Config.AdminFlag)) {
             string p = Globals.ProcessColors(Config.Prefix);
             string msg = Globals.ProcessColors("{Red}Bu komutu kullanmak icin yetkiniz yok!");
@@ -272,12 +293,10 @@ public partial class Speedometer
         OpenAdminMenu(player);
     }
 
-    // YENİ: Başka haritadaki rekoru silme kısayolu
     [Command("topspeeddeletedifferent")]
     public void OnCmdTopSpeedDeleteDifferent(ICommandContext context)
     {
         if (context.Sender is not IPlayer player) return;
-        // Admin komutu, cooldown yok
         if (!Speedometer.Instance.SwiftlyCore.Permission.PlayerHasPermission(player.SteamID, Config.AdminFlag)) {
             string p = Globals.ProcessColors(Config.Prefix);
             string msg = Globals.ProcessColors("{Red}Bu komutu kullanmak icin yetkiniz yok!");

@@ -17,13 +17,11 @@ public class PluginConfig
     public float CommandCooldownSeconds { get; set; } = 3.0f;
 
     public bool TopSpeedEnabled { get; set; } = true;
-    
-    // MEVCUT (TopSpeed Bilgisi)
-    public int HelpMessageIntervalMinutes { get; set; } = 4; 
-    
-    // YENİ (Speedometer/Hud Bilgisi)
+    public int HelpMessageIntervalMinutes { get; set; } = 4;
     public int SpeedometerHelpIntervalMinutes { get; set; } = 5; 
-
+    
+    public string DiscordWebhookUrl { get; set; } = "";
+    
     public string AdminFlag { get; set; } = "@css/ban"; 
 
     public List<string> SpeedMeterCommands { get; set; } = new() { "speedmeter", "myspeed" };

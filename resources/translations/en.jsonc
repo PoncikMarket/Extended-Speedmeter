@@ -6,12 +6,16 @@
   "speedometer.colorset": "Color set to: {0}{1}{{Default}}.",
 
   "topspeed.norecords": "{DarkRed}No records found!{Default}",
-  "topspeed.header.map": "{{Green}}--- Top Records on {0} ---{{Default}}",
-  "topspeed.header.top": "{Green}--- All Time Top Records ---{Default}",
-  "topspeed.header.pr": "{Green}--- Your Personal Records ---{Default}",
-  "topspeed.list.entry": "{0}. {1}: {{Green}}{2} u/s{{Default}} ({3}s)",
+  "topspeed.new_record": "{Green}{0}{Default} set a new {Red}MAP RECORD{Default}: {Green}{1}!",
   "topspeed.admin.deleted": "{DarkRed}Record deleted!{Default}",
   "topspeed.admin.resetall": "{DarkRed}All records have been reset!{Default}",
+  
+  "topspeed.header.map": "{Green}--- Top Records on {0} ---{Default}",
+  "topspeed.header.top": "{Green}--- All Time Top Records ---{Default}",
+  "topspeed.header.pr": "{Green}--- Your Personal Records ---{Default}",
+  "topspeed.list.entry": "{0}. {1}: {Green}{2}{Default} ({3}s)",
+  
+  "speedometer.round_top_players": "{Green}--- Fastest of the Round ---",
   
   "menu.title.main": "Speedometer Settings",
   "menu.option.hud": "Hud Options",
@@ -57,7 +61,7 @@
   "chat.admin.player_not_found": "{DarkRed}Player not found.",
   "chat.admin.enter_speed": "{Green}Type the new SPEED value in chat (e.g., 3500):",
   "chat.admin.enter_time": "{Green}Type the new TIME value in chat (e.g., 12.5):",
-  "chat.admin.speed_updated": "{Green}Speed updated: {0} - {1} -> {2} u/s",
+  "chat.admin.speed_updated": "{Green}Speed updated: {0} - {1} -> {2}",
   "chat.admin.time_updated": "{Green}Time updated: {0} - {1} -> {2}s",
   "chat.admin.invalid_speed": "{DarkRed}Invalid SPEED value! Please enter a positive integer.",
   "chat.admin.invalid_time": "{DarkRed}Invalid TIME value! Please enter a number (e.g., 12.5).",
@@ -66,5 +70,7 @@
   "general.cooldown": "Please wait {0} seconds before using this command again.",
 
   "help.message.topspeed": "{Green}Type {Olive}!topspeedhelp {Green}to see record commands.",
-  "help.message.speedometer": "{LightBlue}Type {Olive}!speedmeteredit {LightBlue}to customize your speedometer settings."
+  "help.message.speedometer": "{LightBlue}Type {Olive}!speedmeteredit {LightBlue}to customize your speedometer settings.",
+
+  "menu.option.roundstats": "Round Stats"
 }

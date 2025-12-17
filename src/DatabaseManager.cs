@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Linq; // ToList() için gerekli
+using System.Linq; 
 using Dapper;
 using SwiftlyS2.Core;
 
@@ -16,7 +16,6 @@ public static class DatabaseManager
         {
             connection.Open();
             
-            // 1. Oyuncu Ayarları Tablosu
             await connection.ExecuteAsync(@"
                 CREATE TABLE IF NOT EXISTS speedometer_data (
                     steamid VARCHAR(64) PRIMARY KEY,
@@ -26,15 +25,8 @@ public static class DatabaseManager
                     color VARCHAR(32) DEFAULT '#00FF00'
                 );");
 
-            // --- YENİ: Round İstatistik Ayarı için Sütun Ekleme ---
-            // Eğer tablo önceden oluştuysa bu sütun eksik olabilir, sonradan eklemeye çalışıyoruz.
-            try 
-            {
-                await connection.ExecuteAsync("ALTER TABLE speedometer_data ADD COLUMN show_round_stats INT DEFAULT 1;");
-            } 
-            catch { /* Sütun zaten varsa hata verir, yoksayabiliriz */ }
+            try { await connection.ExecuteAsync("ALTER TABLE speedometer_data ADD COLUMN show_round_stats INT DEFAULT 1;"); } catch { }
 
-            // 2. TopSpeed Rekorları Tablosu
             await connection.ExecuteAsync(@"
                 CREATE TABLE IF NOT EXISTS topspeed_records (
                     id INT AUTO_INCREMENT PRIMARY KEY, 
@@ -51,7 +43,6 @@ public static class DatabaseManager
         catch (Exception ex) { Console.WriteLine($"[Speedometer] DB Init Error: {ex.Message}"); }
     }
 
-    // --- Oyuncu Ayarları ---
     public static async Task<PlayerData?> LoadPlayerAsync(string steamId)
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
@@ -69,8 +60,8 @@ public static class DatabaseManager
                     hud_enabled = Speedometer.Config.DefaultHudEnabled ? 1 : 0,
                     keys_enabled = Speedometer.Config.DefaultKeyOverlayEnabled ? 1 : 0,
                     jumps_enabled = Speedometer.Config.DefaultJumpsEnabled ? 1 : 0,
-                    show_round_stats = Speedometer.Config.DefaultShowRoundStats ? 1 : 0, // YENİ
-                    color = Speedometer.Globals.GetHexFromColorName(Speedometer.Config.DefaultColor)
+                    show_round_stats = Speedometer.Config.DefaultShowRoundStats ? 1 : 0,
+                    color = Globals.GetHexFromColorName(Speedometer.Config.DefaultColor)
                 };
                 await SavePlayerAsync(data);
             }
@@ -88,7 +79,6 @@ public static class DatabaseManager
             string checkQuery = "SELECT COUNT(*) FROM speedometer_data WHERE steamid = @steamid";
             int count = await connection.ExecuteScalarAsync<int>(checkQuery, new { steamid = data.steamid });
 
-            // YENİ: show_round_stats eklendi
             if (count > 0)
                 await connection.ExecuteAsync("UPDATE speedometer_data SET hud_enabled=@hud_enabled, keys_enabled=@keys_enabled, jumps_enabled=@jumps_enabled, show_round_stats=@show_round_stats, color=@color WHERE steamid=@steamid", data);
             else
@@ -96,8 +86,6 @@ public static class DatabaseManager
         }
         catch { }
     }
-
-    // --- TopSpeed: Kayıt ve Okuma ---
 
     public static async Task<TopSpeedRecord?> GetPlayerMapRecordAsync(string steamId, string mapName)
     {
@@ -139,9 +127,6 @@ public static class DatabaseManager
         catch (Exception ex) { Console.WriteLine($"[Speedometer] DB Save Error: {ex.Message}"); }
     }
     
-    // --- TopSpeed: Sıralama ve Listeler ---
-
-    // 1. Bu haritadaki En İyi 10
     public static async Task<List<TopSpeedRecord>> GetMapTopRecordsAsync(string mapName, int limit = 10)
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
@@ -156,7 +141,6 @@ public static class DatabaseManager
         catch { return new List<TopSpeedRecord>(); }
     }
 
-    // 2. Tüm Haritalardaki En İyi 10
     public static async Task<List<TopSpeedRecord>> GetOverallTopRecordsAsync(int limit = 10)
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
@@ -171,7 +155,6 @@ public static class DatabaseManager
         catch { return new List<TopSpeedRecord>(); }
     }
 
-    // 3. Bir oyuncunun tüm haritalardaki rekorları
     public static async Task<List<TopSpeedRecord>> GetPlayerAllRecordsAsync(string steamId)
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
@@ -186,7 +169,6 @@ public static class DatabaseManager
         catch { return new List<TopSpeedRecord>(); }
     }
 
-    // 4. Haritaları ve Rekor Sayılarını Çekme (MapList Menüsü İçin)
     public static async Task<List<(string MapName, int Count)>> GetMapsWithRecordCountsAsync()
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
@@ -194,7 +176,6 @@ public static class DatabaseManager
         try
         {
             connection.Open();
-            
             string query = @"
                 SELECT map_name, COUNT(*) as record_count 
                 FROM topspeed_records 
@@ -203,23 +184,12 @@ public static class DatabaseManager
                 ORDER BY record_count DESC";
 
             var result = await connection.QueryAsync(query);
-
             foreach (var row in result)
-            {
-                string map = (string)row.map_name;
-                // COUNT(*) long dönebilir, güvenli cast yapılıyor.
-                int count = Convert.ToInt32(row.record_count); 
-                list.Add((map, count));
-            }
+                list.Add(((string)row.map_name, Convert.ToInt32(row.record_count)));
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Speedometer] Harita listesi çekilirken hata: {ex.Message}");
-        }
+        catch (Exception ex) { Console.WriteLine($"[Speedometer] Map list error: {ex.Message}"); }
         return list;
     }
-
-    // --- TopSpeed: Admin İşlemleri ---
 
     public static async Task DeletePlayerRecordAsync(string steamId, string mapName)
     {
@@ -255,9 +225,6 @@ public static class DatabaseManager
         catch {}
     }
     
-    // --- ADMIN: OYUNCU YÖNETİMİ (YENİ EKLENENLER) ---
-
-    // 1. İsimden Oyuncu Bul (Arama)
     public static async Task<List<(string Name, string SteamID)>> SearchPlayersByNameAsync(string partialName)
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
@@ -265,40 +232,32 @@ public static class DatabaseManager
         try
         {
             connection.Open();
-            // Benzersiz oyuncuları bul
             string query = "SELECT DISTINCT player_name, steamid FROM topspeed_records WHERE player_name LIKE @query LIMIT 15";
             var result = await connection.QueryAsync(query, new { query = $"%{partialName}%" });
-
-            foreach (var row in result)
-                list.Add(((string)row.player_name, (string)row.steamid));
+            foreach (var row in result) list.Add(((string)row.player_name, (string)row.steamid));
         }
         catch {}
         return list;
     }
 
-    // 2. Oyuncunun Kayıtlı Olduğu Haritaları Getir
     public static async Task<List<string>> GetPlayerMapsAsync(string steamid)
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
         try
         {
             connection.Open();
-            // Sadece benzersiz harita isimlerini çek
             var result = await connection.QueryAsync<string>("SELECT DISTINCT map_name FROM topspeed_records WHERE steamid = @sid ORDER BY map_name", new { sid = steamid });
             return result.AsList();
         }
         catch { return new List<string>(); }
     }
 
-    // 3. Rekor Güncelle (Hız veya Süre)
     public static async Task UpdatePlayerRecordValueAsync(string steamid, string map, int newVelocity, float newTime)
     {
         using var connection = Speedometer.Instance.SwiftlyCore.Database.GetConnection(Speedometer.Config.DatabaseConnection);
         try
         {
             connection.Open();
-            
-            // Mevcut rekoru çekip verileri koruyoruz (örneğin player_name), sadece velocity ve reach_time güncelleniyor.
             await connection.ExecuteAsync("UPDATE topspeed_records SET velocity = @vel, reach_time = @time WHERE steamid = @sid AND map_name = @map",
                 new { vel = newVelocity, time = newTime, sid = steamid, map = map });
         }
@@ -323,9 +282,6 @@ public class PlayerData
     public int hud_enabled { get; set; }
     public int keys_enabled { get; set; }
     public int jumps_enabled { get; set; }
-    
-    // YENİ: Round istatistikleri aç/kapa
     public int show_round_stats { get; set; } = 1;
-    
     public string color { get; set; } = "#00FF00";
 }

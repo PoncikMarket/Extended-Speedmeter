@@ -11,24 +11,19 @@ using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Core;
 using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.SchemaDefinitions;
+using SwiftlyS2.Shared.Commands;
 
 namespace Speedometer;
 
 public partial class Speedometer
 {
-    private int[] _playerJumpCounts = new int[65];
-    public bool[] _showJumps = new bool[65];
-    private DateTime[] _playerSpeedRunStartTime = new DateTime[65];
-    
-    // Yardım Mesajı Sayaçları
-    private DateTime _lastTopSpeedHelpTime = DateTime.Now;
-    private DateTime _lastSpeedometerHelpTime = DateTime.Now;
+    private DateTime[] _nextHudUpdate = new DateTime[65];
 
     [EventListener<EventDelegates.OnMapLoad>]
     public void OnMapLoad(IOnMapLoadEvent @event)
     {
         Speedometer.CurrentMapName = @event.MapName;
-        Console.WriteLine($"[Speedometer] Harita yuklendi: {Speedometer.CurrentMapName}");
+        Console.WriteLine($"[Speedometer] Map loaded: {Speedometer.CurrentMapName}");
         
         _serverRecordSpeed = 0;
         _serverRecordHolder = "";
@@ -42,9 +37,13 @@ public partial class Speedometer
             }
         });
         
-        // Süreleri sıfırla
         _lastTopSpeedHelpTime = DateTime.Now;
         _lastSpeedometerHelpTime = DateTime.Now;
+    }
+
+    [EventListener<EventDelegates.OnMapUnload>]
+    public void OnMapUnload(IOnMapUnloadEvent @event)
+    {
     }
 
     [GameEventHandler(HookMode.Post)]
@@ -65,6 +64,11 @@ public partial class Speedometer
                 _playerRoundMaxSpeed[id] = 0;
                 _playerSpeedRunStartTime[id] = DateTime.Now;
                 _playerDbReachTime[id] = 0.0f; 
+                
+                _isBreakingRecord[id] = false;
+                _tempPeakSpeed[id] = 0;
+                _tempPeakTime[id] = 0.0f;
+                _nextHudUpdate[id] = DateTime.Now; 
 
                 if (!player.IsFakeClient)
                 {
@@ -119,18 +123,19 @@ public partial class Speedometer
                 _playerSessionMaxSpeed[id] = 0;
                 _playerRoundMaxSpeed[id] = 0;
                 _playerDbReachTime[id] = 0.0f; 
+                
                 Globals.AdminEditStates.TryRemove(id, out _);
             }
         }
         return HookResult.Continue;
     }
 
-    [GameEventHandler(HookMode.Pre)]
-    public HookResult OnClientChat(EventPlayerChat @event)
+    [ClientChatHookHandler]
+    public HookResult OnClientChat(int playerId, string text, bool teamOnly)
     {
-        if (@event.UserIdPlayer is not { } player) return HookResult.Continue;
-        if (@event.TeamOnly) return HookResult.Continue;
-        
+        var player = Speedometer.Instance.SwiftlyCore.PlayerManager.GetPlayer(playerId);
+        if (player == null || !player.IsValid) return HookResult.Continue;
+
         int pid = player.PlayerID;
 
         if (Globals.AdminEditStates.TryGetValue(pid, out var state))
@@ -140,7 +145,7 @@ public partial class Speedometer
                 Globals.AdminEditStates.TryRemove(pid, out _); 
                 return HookResult.Continue;
             }
-            Speedometer.Instance.HandleAdminChatInput(player, @event.Text, state);
+            Speedometer.Instance.HandleAdminChatInput(player, text, state);
             return HookResult.Stop; 
         }
         return HookResult.Continue;
@@ -167,12 +172,14 @@ public partial class Speedometer
         if (stats.Any())
         {
             string prefix = Globals.ProcessColors(Config.Prefix);
-            string msgTitle = Globals.ProcessColors("{Green}--- Round En Hizlilari ---");
-            
             foreach (var p in players)
             {
                 if (p != null && p.IsValid && !p.IsFakeClient && _showRoundStats[p.PlayerID])
                 {
+                    var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(p);
+                    string titleKey = "speedometer.round_top_players";
+                    string msgTitle = Globals.ProcessColors(localizer[titleKey] ?? "{Green}--- Fastest of the Round ---");
+                    
                     p.SendChat($"{prefix} {msgTitle}");
                     int rank = 1;
                     foreach (var s in stats)
@@ -239,46 +246,32 @@ public partial class Speedometer
         var allPlayers = Speedometer.Instance.SwiftlyCore.PlayerManager.GetAllPlayers();
         string currentRainbow = GetRainbowColor();
 
-        // --- BİLGİLENDİRME MESAJI 1 (TopSpeed) ---
-        if (Config.HelpMessageIntervalMinutes > 0)
-        {
-            if ((DateTime.Now - _lastTopSpeedHelpTime).TotalMinutes >= Config.HelpMessageIntervalMinutes)
-            {
-                _lastTopSpeedHelpTime = DateTime.Now;
-                string prefix = Globals.ProcessColors(Config.Prefix);
-                
-                foreach (var p in allPlayers)
-                {
-                    if (p != null && p.IsValid && !p.IsFakeClient)
-                    {
-                        // Oyuncunun diline göre mesajı al
-                        var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(p);
-                        string msg = Globals.ProcessColors(localizer["help.message.topspeed"]);
-                        p.SendChat($"{prefix} {msg}");
-                    }
-                }
-            }
+        string SafeTrans(IPlayer p, string key) {
+            try { return Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(p)[key]; } catch { return ""; }
         }
 
-        // --- BİLGİLENDİRME MESAJI 2 (Speedometer) ---
-        if (Config.SpeedometerHelpIntervalMinutes > 0)
+        if (Config.HelpMessageIntervalMinutes > 0 && (DateTime.Now - _lastTopSpeedHelpTime).TotalMinutes >= Config.HelpMessageIntervalMinutes)
         {
-            if ((DateTime.Now - _lastSpeedometerHelpTime).TotalMinutes >= Config.SpeedometerHelpIntervalMinutes)
-            {
-                _lastSpeedometerHelpTime = DateTime.Now;
-                string prefix = Globals.ProcessColors(Config.Prefix);
-                
-                foreach (var p in allPlayers)
+            _lastTopSpeedHelpTime = DateTime.Now;
+            string prefix = Globals.ProcessColors(Config.Prefix);
+            foreach (var p in allPlayers)
+                if (p?.IsValid == true && !p.IsFakeClient)
                 {
-                    if (p != null && p.IsValid && !p.IsFakeClient)
-                    {
-                        // Oyuncunun diline göre mesajı al
-                        var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(p);
-                        string msg = Globals.ProcessColors(localizer["help.message.speedometer"]);
-                        p.SendChat($"{prefix} {msg}");
-                    }
+                    string msg = SafeTrans(p, "help.message.topspeed");
+                    if(!string.IsNullOrEmpty(msg)) p.SendChat($"{prefix} {Globals.ProcessColors(msg)}");
                 }
-            }
+        }
+
+        if (Config.SpeedometerHelpIntervalMinutes > 0 && (DateTime.Now - _lastSpeedometerHelpTime).TotalMinutes >= Config.SpeedometerHelpIntervalMinutes)
+        {
+            _lastSpeedometerHelpTime = DateTime.Now;
+            string prefix = Globals.ProcessColors(Config.Prefix);
+            foreach (var p in allPlayers)
+                if (p?.IsValid == true && !p.IsFakeClient)
+                {
+                    string msg = SafeTrans(p, "help.message.speedometer");
+                    if(!string.IsNullOrEmpty(msg)) p.SendChat($"{prefix} {Globals.ProcessColors(msg)}");
+                }
         }
 
         foreach (var player in allPlayers)
@@ -303,16 +296,10 @@ public partial class Speedometer
             else if (player.PlayerPawn != null && player.PlayerPawn.ObserverServices != null)
             {
                 var observerHandle = player.PlayerPawn.ObserverServices.ObserverTarget;
-                if (observerHandle.Value != null)
+                if (observerHandle.Value is CCSPlayerPawn pawn)
                 {
-                    if (observerHandle.Value is CCSPlayerPawn pawn)
-                    {
-                        targetPawn = pawn;
-                        if (targetPawn.LifeState == 0) 
-                        {
-                            isSpectating = true;
-                        }
-                    }
+                    targetPawn = pawn;
+                    if (targetPawn.LifeState == 0) isSpectating = true;
                 }
             }
 
@@ -322,7 +309,6 @@ public partial class Speedometer
             double speedDouble = Math.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
             currentSpeed = (int)Math.Round(speedDouble);
 
-            // --- REKOR KAYDI ---
             if (!isSpectating && Config.TopSpeedEnabled)
             {
                 if (currentSpeed < 100) _playerSpeedRunStartTime[pId] = DateTime.Now;
@@ -332,48 +318,31 @@ public partial class Speedometer
 
                 bool isMapValid = Speedometer.CurrentMapName != "unknown" && Speedometer.CurrentMapName != "unknown_map";
 
-                if (isMapValid && currentSpeed > _playerDbMaxSpeed[pId] && currentSpeed > 300)
+                if (isMapValid)
                 {
-                    _playerDbMaxSpeed[pId] = currentSpeed;
-                    
-                    float reachTime = (float)(DateTime.Now - _playerSpeedRunStartTime[pId]).TotalSeconds;
-                    if (reachTime < 0) reachTime = 0;
-                    
-                    _playerDbReachTime[pId] = reachTime;
+                    int recordThreshold = _serverRecordSpeed > 300 ? _serverRecordSpeed : 300;
 
-                    string pName = player.Controller?.PlayerName ?? "Unknown";
-                    string steamId = player.SteamID.ToString();
-                    string mapName = Speedometer.CurrentMapName;
-
-                    if (currentSpeed > _serverRecordSpeed)
+                    if (currentSpeed > recordThreshold)
                     {
-                        _serverRecordSpeed = currentSpeed;
-                        _serverRecordHolder = pName;
-                        string prefix = Globals.ProcessColors(Config.Prefix);
-                        string speedStr = Globals.FormatSpeed(currentSpeed);
+                        _isBreakingRecord[pId] = true;
                         
-                        foreach(var p in allPlayers) 
+                        if (currentSpeed > _tempPeakSpeed[pId])
                         {
-                            if(p!=null && p.IsValid) 
-                                p.SendChat($"{prefix} {Globals.ProcessColors($"{{Green}}{pName}{{Default}} yeni {{Red}}HARITA REKORU{{Default}} kirdi: {{Green}}{speedStr}!")}");
+                            _tempPeakSpeed[pId] = currentSpeed;
+                            float reachTime = (float)(DateTime.Now - _playerSpeedRunStartTime[pId]).TotalSeconds;
+                            if (reachTime < 0) reachTime = 0;
+                            _tempPeakTime[pId] = reachTime;
                         }
                     }
-
-                    Task.Run(async () => 
+                    else if (_isBreakingRecord[pId] && currentSpeed < recordThreshold)
                     {
-                        var newRecord = new TopSpeedRecord
-                        {
-                            steamid = steamId,
-                            player_name = pName,
-                            map_name = mapName,
-                            velocity = currentSpeed,
-                            reach_time = reachTime,
-                            date_achieved = DateTime.Now
-                        };
-                        await DatabaseManager.SaveTopSpeedRecordAsync(newRecord);
-                    });
+                        FinishRecordRun(player, pId);
+                    }
                 }
             }
+
+            if (DateTime.Now < _nextHudUpdate[pId]) continue;
+            _nextHudUpdate[pId] = DateTime.Now.AddMilliseconds(25);
 
             string userColor;
             string choice = _playerColorChoices[pId];
@@ -383,9 +352,7 @@ public partial class Speedometer
             int jumps = _playerJumpCounts[pId];
 
             StringBuilder htmlBuilder = new StringBuilder();
-            
             string displaySpeedStr = Globals.FormatSpeed(currentSpeed);
-
             string label = isSpectating ? "<font color='#AAAAAA'>(Spec)</font> Speed" : "Speed";
             htmlBuilder.Append($"<font class='fontSize-l' color='#FFFFFF'>{label}: <font color='{userColor}'>{displaySpeedStr}</font></font>");
             
@@ -398,8 +365,7 @@ public partial class Speedometer
             if (_isKeyOverlayActive[pId] && !isSpectating)
             {
                 htmlBuilder.Append("<br>");
-                var b = pressedButtons;
-                string K(GameButtonFlags flag, string txt) => ((b & flag) != 0) ? $"<font color='#FFFFFF'>{txt}</font>" : $"<font color='#444444'>{txt}</font>";
+                string K(GameButtonFlags flag, string txt) => ((pressedButtons & flag) != 0) ? $"<font color='#FFFFFF'>{txt}</font>" : $"<font color='#444444'>{txt}</font>";
                 htmlBuilder.Append("<font face='Consolas, monospace' class='fontSize-l'>");
                 string s = "&nbsp;"; 
                 htmlBuilder.Append($"{K(GameButtonFlags.A, "←")}{s}{K(GameButtonFlags.W, "W")}{s}{K(GameButtonFlags.D, "→")}<br>");
@@ -408,7 +374,81 @@ public partial class Speedometer
                 htmlBuilder.Append("</font>");
             }
             
-            player.SendCenterHTML(htmlBuilder.ToString(), 100);
+            player.SendCenterHTML(htmlBuilder.ToString(), 300);
         }
+    }
+
+    private void FinishRecordRun(IPlayer player, int pId)
+    {
+        _isBreakingRecord[pId] = false;
+        
+        int peakSpeed = _tempPeakSpeed[pId];
+        float peakTime = _tempPeakTime[pId];
+        
+        if (peakSpeed > _playerDbMaxSpeed[pId])
+        {
+            _playerDbMaxSpeed[pId] = peakSpeed;
+            _playerDbReachTime[pId] = peakTime;
+
+            string pName = player.Controller?.PlayerName ?? "Unknown";
+            string steamId = player.SteamID.ToString();
+            string mapName = Speedometer.CurrentMapName;
+
+            if (peakSpeed > _serverRecordSpeed)
+            {
+                _serverRecordSpeed = peakSpeed;
+                _serverRecordHolder = pName;
+                
+                string prefix = Globals.ProcessColors(Config.Prefix);
+                string speedStr = Globals.FormatSpeed(peakSpeed);
+                var localizer = Speedometer.Instance.SwiftlyCore.Translation.GetPlayerLocalizer(player);
+                
+                string msg = "{Green}{0}{Default} set a new {Red}MAP RECORD{Default}: {Green}{1}!";
+                try 
+                {
+                    string trans = localizer["topspeed.new_record"];
+                    if (!string.IsNullOrEmpty(trans)) msg = trans;
+                }
+                catch { }
+
+                string safeMsg = msg.Replace("{0}", pName).Replace("{1}", speedStr);
+                string finalMsg = $"{prefix} {Globals.ProcessColors(safeMsg)}";
+
+                var allPlayers = Speedometer.Instance.SwiftlyCore.PlayerManager.GetAllPlayers();
+                foreach(var p in allPlayers) if(p!=null && p.IsValid) p.SendChat(finalMsg);
+                
+                Task.Run(async () => 
+                {
+                    var newRecord = new TopSpeedRecord 
+                    { 
+                        steamid = steamId, 
+                        player_name = pName, 
+                        map_name = mapName, 
+                        velocity = peakSpeed, 
+                        reach_time = peakTime, 
+                        date_achieved = DateTime.Now
+                    };
+                    await DatabaseManager.SaveTopSpeedRecordAsync(newRecord);
+                    await DiscordWebhook.SendDiscordWebhook(pName, mapName, peakSpeed);
+                });
+            }
+            else
+            {
+                 Task.Run(async () => 
+                 {
+                     var newRecord = new TopSpeedRecord 
+                     { 
+                         steamid = steamId, 
+                         player_name = pName, 
+                         map_name = mapName, 
+                         velocity = peakSpeed, 
+                         reach_time = peakTime, 
+                         date_achieved = DateTime.Now
+                     };
+                     await DatabaseManager.SaveTopSpeedRecordAsync(newRecord);
+                 });
+            }
+        }
+        _tempPeakSpeed[pId] = 0;
     }
 }

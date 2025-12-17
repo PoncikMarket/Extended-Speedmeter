@@ -6,11 +6,17 @@
   "speedometer.colorset": "Renk şuna ayarlandı: {0}{1}{{Default}}.",
   
   "topspeed.norecords": "{DarkRed}Hic rekor bulunamadi!{Default}",
-  "topspeed.header.map": "{{Green}}--- {0} Haritasi En Iyiler ---{{Default}}",
+  "topspeed.new_record": "{Green}{0}{Default} yeni {Red}HARİTA REKORU{Default} kırdı: {Green}{1}!",
+  "topspeed.admin.deleted": "{DarkRed}Kayıt silindi!{Default}",
+  "topspeed.admin.resetall": "{DarkRed}Tüm kayıtlar sıfırlandı!{Default}",
+  
+  "topspeed.header.map": "{Green}--- {0} Haritasi En Iyiler ---{Default}",
   "topspeed.header.top": "{Green}--- Tum Zamanlarin En Iyileri ---{Default}",
   "topspeed.header.pr": "{Green}--- Senin Rekorlarin ---{Default}",
-  "topspeed.list.entry": "{0}. {1}: {{Green}}{2} u/s{{Default}} ({3}s)",
+  "topspeed.list.entry": "{0}. {1}: {Green}{2}{Default} ({3}s)",
   
+  "speedometer.round_top_players": "{Green}--- Round En Hızlıları ---",
+
   "menu.title.main": "Hız Göstergesi Ayarları",
   "menu.option.hud": "Hud Seçenekleri",
   "menu.title.hud": "Hud Seçenekleri",
@@ -55,7 +61,7 @@
   "chat.admin.player_not_found": "{DarkRed}Oyuncu bulunamadi.",
   "chat.admin.enter_speed": "{Green}Yeni HIZ degerini chate yazin (Örn: 3500):",
   "chat.admin.enter_time": "{Green}Yeni SURE degerini chate yazin (Örn: 12.5):",
-  "chat.admin.speed_updated": "{Green}Hiz guncellendi: {0} - {1} -> {2} u/s",
+  "chat.admin.speed_updated": "{Green}Hiz guncellendi: {0} - {1} -> {2}",
   "chat.admin.time_updated": "{Green}Sure guncellendi: {0} - {1} -> {2}s",
   "chat.admin.invalid_speed": "{DarkRed}Gecersiz HIZ degeri! Sadece pozitif tamsayi girin.",
   "chat.admin.invalid_time": "{DarkRed}Gecersiz SURE degeri! Sayi girin (Orn: 12.5).",
@@ -64,5 +70,7 @@
   "general.cooldown": "Lutfen tekrar kullanmak icin {0} saniye bekleyin.",
   
   "help.message.topspeed": "{Green}Rekor komutlarini gormek icin {Olive}!topspeedhelp {Green}yazabilirsiniz.",
-  "help.message.speedometer": "{LightBlue}Hiz gostergesi ve renk ayarlari icin {Olive}!speedmeteredit {LightBlue}yazabilirsiniz."
+  "help.message.speedometer": "{LightBlue}Hiz gostergesi ve renk ayarlari icin {Olive}!speedmeteredit {LightBlue}yazabilirsiniz.",
+
+  "menu.option.roundstats": "Round Sonu İstatistikleri"
 }
