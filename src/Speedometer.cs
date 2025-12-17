@@ -12,7 +12,7 @@ using SwiftlyS2.Shared.Players;
 
 namespace Speedometer;
 
-[PluginMetadata(Id = "Extended-Speedmeter", Version = "1.0.0", Name = "Extended-Speedmeter", Author = "PoncikMarket", Description = "Speedmeter with topspeed")]
+[PluginMetadata(Id = "Extended-Speedmeter", Version = "1.0.1", Name = "Extended-Speedmeter", Author = "PoncikMarket", Description = "Speedmeter with topspeed")]
 public partial class Speedometer : BasePlugin
 {
     public static Speedometer Instance { get; private set; } = null!;
