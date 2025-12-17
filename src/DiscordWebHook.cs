@@ -49,9 +49,10 @@ namespace Speedometer
                     csgoRoot = Path.Combine(currentDir, "csgo");
                 }
 
+                searchPaths.Add(Path.Combine(csgoRoot, "addons", "swiftlys2", "plugins", "Extended-Speedmeter", "resources", "payload.json"));
+                searchPaths.Add(Path.Combine(csgoRoot, "addons", "swiftlys2", "plugins", "extended-speedmeter", "resources", "payload.json"));
                 searchPaths.Add(Path.Combine(csgoRoot, "addons", "swiftlys2", "plugins", "cs2-speedmeter", "resources", "payload.json"));
                 searchPaths.Add(Path.Combine(csgoRoot, "addons", "swiftlys2", "plugins", "Speedometer", "resources", "payload.json"));
-                searchPaths.Add(Path.Combine(csgoRoot, "addons", "swiftlys2", "plugins", "speedometer", "resources", "payload.json"));
 
                 foreach (string path in searchPaths)
                 {
@@ -62,7 +63,11 @@ namespace Speedometer
                     }
                 }
 
-                if (string.IsNullOrEmpty(jsonPath)) return;
+                if (string.IsNullOrEmpty(jsonPath)) 
+                {
+                    Console.WriteLine("[Extended-Speedmeter] ERROR: 'resources/payload.json' not found!");
+                    return;
+                }
 
                 string jsonContent = await File.ReadAllTextAsync(jsonPath);
                 string serverName = Speedometer.Instance.SwiftlyCore.ConVar.Find<string>("hostname")?.Value ?? "CS2 Server";
@@ -83,7 +88,10 @@ namespace Speedometer
                     await client.PostAsync(webhookUrl, content);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Extended-Speedmeter] Webhook Error: {ex.Message}");
+            }
         }
     }
 }
